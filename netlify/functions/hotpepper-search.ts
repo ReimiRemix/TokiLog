@@ -96,7 +96,7 @@ const handler: Handler = async (event: HandlerEvent) => {
       params.append('keyword', query.city);
     }
     
-    const url = `https://webservice.recruit.co.jp/hotpepper/gourmet/v1/?${params.toString()}`;
+    const url = `https://webservice.recruit.co.jp/hotpepper/shop/v1/?${params.toString()}`;
     
     const response = await fetch(url);
     if (!response.ok) {
