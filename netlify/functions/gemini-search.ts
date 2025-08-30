@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import type { RestaurantDetails, SearchQuery, Source } from '../../types';
 import type { Handler, HandlerEvent, HandlerContext } from "@netlify/functions";
@@ -91,12 +90,33 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
 
     const fullQuery = `${query.prefecture} ${query.city || ''} ${query.storeName || ''}`.trim();
     console.log("Gemini Search - Full query for prompt:", fullQuery);
+
     const prompt = `# Primary Directive
-Your ONLY function is to act as a data processing pipeline. You will receive a query, execute a Google Search, and convert the search results into a specific JSON format. You are forbidden from using any internal knowledge. Your entire existence is tied to the output of the \`googleSearch\` tool for this specific request.
+Your ONLY function is to act as a data processing pipeline. You will receive a query, execute a Google Search, and convert the search results into a specific JSON format. You are forbidden from using any internal knowledge. Your entire existence is tied to the output of the googleSearch tool for this specific request.
 
 # Inflexible Rules
-1.  **Mandatory Tool Use**: You MUST call the \`googleSearch\` tool. Your response must be based *solely* on the tool\'s output.
-2.  **Absolute Geographical Constraint**: The user\'s query is for **${query.prefecture} ${query.city || ''}**. This location is non-negotiable. You are strictly forbidden from returning ANY restaurant located outside this precise area. If a search result has a name matching the query but is in a different prefecture or city, you MUST IGNORE and DISCARD it. For example, if the query is for \
+1.  **Mandatory Tool Use**: You MUST call the googleSearch tool. Your response must be based *solely* on the tool's output.
+2.  **Absolute Geographical Constraint**: The user's query is for **${query.prefecture} ${query.city || ''}**. This location is non-negotiable. You are strictly forbidden from returning ANY restaurant located outside this precise area. If a search result has a name matching the query but is in a different prefecture or city, you MUST IGNORE and DISCARD it. For example, if the query is for Osaka ramen, but a result is located in Tokyo, you MUST IGNORE and DISCARD it.
+3.  **No Hallucinations**: Do not add, infer, or fabricate any information that is not directly supported by the search results.
+4.  **JSON Output Only**: Your response MUST be ONLY a valid JSON array of objects (e.g., []). Each object represents a restaurant and MUST have these keys: "name" (string), "address" (string), "phone" (string or null), "website" (string or null), "rating" (number or null), "reviewCount" (number or null), "description" (string). No additional text, no markdown, no explanations. If no valid results, return an empty array [].
+5.  **Maximum Results**: Return at most 10 results, prioritized by relevance and rating.
+6.  **Query Handling**: The received query is a restaurant search term (e.g., "ramen shops"). Append terms like "restaurants" or "店舗" if needed to optimize the search, but always include the geographical constraint.`;
+
+    // Define grounding tool for Google Search
+    const groundingTool = {
+      googleSearch: {},
+    };
+
+    // Generate content with grounding and system instruction
+    const response: GenerateContentResponse = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: fullQuery,
+      config: {
+        systemInstruction: prompt,
+        tools: [groundingTool],
+      },
+    });
+
     console.log("Gemini Search - Raw AI response:", response.text);
 
     // Extract sources from grounding metadata
