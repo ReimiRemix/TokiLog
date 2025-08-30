@@ -170,7 +170,7 @@ const App: React.FC = () => {
 
    // Query for the current user's restaurants
    const { data: myRestaurants = [], error: myRestaurantsError } = useQuery({
-      queryKey: ['myRestaurants', user?.id],
+      queryKey: ['restaurants', user?.id],
       queryFn: async ({ queryKey }) => {
           const [, userId] = queryKey;
           if (!userId) return [];
@@ -418,7 +418,8 @@ const App: React.FC = () => {
       // Invalidation for notifications is now handled by the realtime subscription,
       // but we keep this one for the user who performed the action, ensuring an immediate update.
       queryClient.invalidateQueries({ queryKey: ['notifications', user?.id] });
-      setAddRestaurantSuccessMessage(`「${variables.name}」をお気に入りに追加しました！`);
+      const restaurantName = (variables && 'name' in variables) ? variables.name : '不明な店舗';
+      setAddRestaurantSuccessMessage(`「${restaurantName}」をお気に入りに追加しました！`);
       setIsManualAddModalOpen(false);
       // setSearchResults([]); // Keep search results visible
       // setCurrentSearchQuery(null); // Keep current search query
