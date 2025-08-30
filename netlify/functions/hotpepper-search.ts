@@ -24,74 +24,19 @@ const handler: Handler = async (event: HandlerEvent) => {
     const params = new URLSearchParams({
         key: API_KEY,
         format: 'json',
-        count: '20' // Get up to 20 results
+        count: '30' // Increase count to get more results to filter from
     });
-    console.log("Hotpepper Search - Initial params:", params.toString());
 
-    // Combine storeName and location for a general keyword search
-    const prefectureToLargeAreaCode: { [key: string]: string } = {
-      '北海道': 'Z01',
-      '青森県': 'Z02',
-      '岩手県': 'Z02',
-      '宮城県': 'Z02',
-      '秋田県': 'Z02',
-      '山形県': 'Z02',
-      '福島県': 'Z02',
-      '茨城県': 'Z03',
-      '栃木県': 'Z03',
-      '群馬県': 'Z03',
-      '埼玉県': 'Z03',
-      '千葉県': 'Z03',
-      '東京都': 'Z03',
-      '神奈川県': 'Z03',
-      '新潟県': 'Z04',
-      '富山県': 'Z04',
-      '石川県': 'Z04',
-      '福井県': 'Z04',
-      '山梨県': 'Z05',
-      '長野県': 'Z05',
-      '岐阜県': 'Z06',
-      '静岡県': 'Z06',
-      '愛知県': 'Z06',
-      '三重県': 'Z06',
-      '滋賀県': 'Z07',
-      '京都府': 'Z07',
-      '大阪府': 'Z07',
-      '兵庫県': 'Z07',
-      '奈良県': 'Z07',
-      '和歌山県': 'Z07',
-      '鳥取県': 'Z08',
-      '島根県': 'Z08',
-      '岡山県': 'Z08',
-      '広島県': 'Z08',
-      '山口県': 'Z08',
-      '徳島県': 'Z09',
-      '香川県': 'Z09',
-      '愛媛県': 'Z09',
-      '高知県': 'Z09',
-      '福岡県': 'Z10',
-      '佐賀県': 'Z10',
-      '長崎県': 'Z10',
-      '熊本県': 'Z10',
-      '大分県': 'Z10',
-      '宮崎県': 'Z10',
-      '鹿児島県': 'Z10',
-      '沖縄県': 'Z11',
-    };
-
-    const largeAreaCode = prefectureToLargeAreaCode[query.prefecture];
-    if (largeAreaCode) {
-      params.append('large_area', largeAreaCode);
-    }
-
-    // Combine all available fields into a single keyword for a robust AND search.
-    // This ensures that even a prefecture-only search works as the API requires a keyword.
+    // Combine all available fields into a single keyword.
+    // This provides a more flexible search, similar to the Hotpepper website.
     const keywordString = [query.prefecture, query.city, query.storeName]
-      .filter(Boolean) // Remove any empty/null values
-      .join(' '); // Join with spaces
+      .filter(Boolean)
+      .join(' ');
 
     if (keywordString) {
       params.append('keyword', keywordString);
+    } else {
+      return { statusCode: 400, body: JSON.stringify({ error: '検索キーワードがありません。' }) };
     }
     
     const url = `https://webservice.recruit.co.jp/hotpepper/shop/v1/?${params.toString()}`;
@@ -110,12 +55,14 @@ const handler: Handler = async (event: HandlerEvent) => {
             body: JSON.stringify([]),
         };
     }
+
+    // Post-filter the results to ensure they are in the correct prefecture.
+    const filteredShops = (data.results.shop || []).filter((shop: any) => 
+        shop.address && shop.address.includes(query.prefecture)
+    );
     
-    const formattedResults: HotpepperRestaurant[] = (data.results.shop || []).map((shop: any) => {
-        // Use the user's query for the prefecture as it's more reliable than parsing.
+    const formattedResults: HotpepperRestaurant[] = filteredShops.map((shop: any) => {
         const prefecture = query.prefecture;
-        
-        // Use the service area from the API for the city, falling back to the user's query.
         const city = shop.service_area?.name || query.city || '不明';
 
         return {
@@ -134,10 +81,6 @@ const handler: Handler = async (event: HandlerEvent) => {
             isFromHotpepper: true,
         };
     });
-
-    // Filter results to strictly match the requested prefecture.
-    // This will discard any results where the address did not contain a matching prefecture.
-    // const filteredResults = formattedResults.filter(shop => shop.prefecture === query.prefecture);
     
     return {
       statusCode: 200,
