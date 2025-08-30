@@ -78,12 +78,12 @@ const handler: Handler = async (event: HandlerEvent) => {
 
     // Filter results to strictly match the requested prefecture.
     // This will discard any results where the address did not contain a matching prefecture.
-    const filteredResults = formattedResults.filter(shop => shop.prefecture === query.prefecture);
+    // const filteredResults = formattedResults.filter(shop => shop.prefecture === query.prefecture);
     
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(filteredResults),
+      body: JSON.stringify(formattedResults),
     };
 
   } catch (error) {
