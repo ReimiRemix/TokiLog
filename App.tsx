@@ -102,6 +102,8 @@ const App: React.FC = () => {
   const [restaurantToUpdate, setRestaurantToUpdate] = useState<Restaurant | null>(null);
   const [addRestaurantSuccessMessage, setAddRestaurantSuccessMessage] = useState<string | null>(null);
   
+  const [searchError, setSearchError] = useState<string | null>(null);
+  
   const [isReadOnlyMode, setIsReadOnlyMode] = useState(false);
 
   
@@ -329,14 +331,12 @@ const App: React.FC = () => {
     },
     onSuccess: (data) => {
       setSearchResults(data);
-      // No automatic fallback to Gemini here.
+      setSearchError(null); // Clear previous errors on new success
     },
     onError: (error) => {
       setSearchResults([]);
+      setSearchError(error.message); // Set error message to display
       console.error("Hotpepper search failed:", error);
-      // No automatic fallback to Gemini here.
-      // Optionally, inform the user that Hotpepper search failed and they can try AI search.
-      alert(`ホットペッパーでの検索に失敗しました。AI検索を試してみてください。エラー: ${error.message}`);
     },
   });
 
@@ -499,7 +499,18 @@ const App: React.FC = () => {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
-      // In read-only mode, auth loading is handled below to avoid flashes
+
+      // If the user is logged out (session is null), reset all view-related states
+      // to ensure a clean return to the login page.
+      if (!session) {
+        setIsReadOnlyMode(false);
+        setShareId(null);
+        setCurrentViewedUserId(null);
+        sessionStorage.removeItem('shareId');
+      }
+
+      // Only stop the auth loading indicator if not in a share session,
+      // as the share session logic will handle it.
       if (!sessionStorage.getItem('shareId')) {
         setAuthLoading(false);
       }
@@ -555,6 +566,7 @@ const App: React.FC = () => {
     setCurrentSearchQuery(query);
     setGeminiSearchTriggered(false);
     setAddRestaurantSuccessMessage(null); // Clear success message on new search
+    setSearchError(null); // Clear previous errors on new search
     hotpepperSearchMutation.mutate(query);
   };
   
@@ -784,6 +796,12 @@ const App: React.FC = () => {
               {view === 'search' && !isReadOnlyMode && (
                 <>
                   <RestaurantInput onSearch={handleSearch} isLoading={hotpepperSearchMutation.isPending || geminiSearchMutation.isPending} />
+                  {searchError && (
+                    <div className="p-4 my-4 bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-200 rounded-md text-center">
+                      <p className="font-semibold">検索結果がありません</p>
+                      <p className="text-sm mt-1">{searchError}</p>
+                    </div>
+                  )}
                   {addRestaurantSuccessMessage && (
                     <div className="p-4 mb-4 bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200 rounded-md">
                       {addRestaurantSuccessMessage}
@@ -813,8 +831,8 @@ const App: React.FC = () => {
                   />
                 </>
               )}
-              {view === 'userSearch' && !isReadOnlyMode && (
-                <UserSearch />
+              {view === 'userSearch' && !isReadOnlyMode && user && (
+                <UserSearch user={user} />
               )}
               {view === 'followed' && !isReadOnlyMode && (
                 <>

@@ -4,6 +4,7 @@ import { supabase } from '../supabaseClient';
 import LoadingSpinner from './icons/LoadingSpinner';
 import CheckIcon from './icons/CheckIcon';
 import XIcon from './icons/XIcon';
+import { getPendingFollowRequests } from '../services/followService';
 import { User } from '@supabase/supabase-js';
 
 interface ReceivedFollowRequest {
@@ -24,27 +25,20 @@ interface SentFollowRequest {
 
 const PendingRequestsList: React.FC = () => {
   const queryClient = useQueryClient();
-  const { data: currentUser } = useQuery<User | null>({
+  const { data: currentUser } = useQuery({
     queryKey: ['currentUser'],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
       return user;
     },
-    staleTime: Infinity,
+    staleTime: Infinity, // We don't need to refetch the user frequently
   });
 
   // Fetch received follow requests
-  const { data: receivedRequests, isLoading: isLoadingReceived, error: errorReceived } = useQuery<ReceivedFollowRequest[]>({
+  const { data: receivedRequests, isLoading: isLoadingReceived, error: errorReceived } = useQuery({
     queryKey: ['receivedFollowRequests', currentUser?.id],
-    queryFn: async () => {
-      if (!currentUser) return [];
-      const { data, error } = await supabase.rpc('get_pending_follow_requests');
-      if (error) {
-        throw error;
-      }
-      return data || [];
-    },
-    enabled: !!currentUser,
+    queryFn: getPendingFollowRequests, // Use the imported service function
+    enabled: !!currentUser, // This query will only run when currentUser is available
   });
 
   // TODO: Fetch sent follow requests (requires a new RPC function in Supabase)
@@ -66,14 +60,16 @@ const PendingRequestsList: React.FC = () => {
 
   const acceptMutation = useMutation({
     mutationFn: async (requestId: string) => {
-      const { error } = await supabase.rpc('accept_follow_request', { p_request_id: requestId });
-      if (error) {
-        throw error;
-      }
+      const { error } = await supabase
+        .from('follow_relationships')
+        .update({ status: 'accepted', updated_at: new Date().toISOString() })
+        .eq('id', requestId);
+        
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['receivedFollowRequests'] });
-      queryClient.invalidateQueries({ queryKey: ['followers'] }); // Invalidate followers list as well
+      queryClient.invalidateQueries({ queryKey: ['followers'] });
       alert('フォローリクエストを承認しました！');
     },
     onError: (err: any) => {
@@ -84,10 +80,12 @@ const PendingRequestsList: React.FC = () => {
 
   const rejectMutation = useMutation({
     mutationFn: async (requestId: string) => {
-      const { error } = await supabase.rpc('reject_follow_request', { p_request_id: requestId });
-      if (error) {
-        throw error;
-      }
+      const { error } = await supabase
+        .from('follow_relationships')
+        .delete()
+        .eq('id', requestId);
+
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['receivedFollowRequests'] });
