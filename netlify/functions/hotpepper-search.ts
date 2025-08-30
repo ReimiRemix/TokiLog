@@ -14,7 +14,10 @@ const handler: Handler = async (event: HandlerEvent) => {
 
   try {
     const query = JSON.parse(event.body || '{}') as SearchQuery;
+    console.log("Hotpepper Search - Incoming query:", query);
+
     if (!query.prefecture) {
+      console.error("Hotpepper Search - Missing prefecture in query:", query);
       return { statusCode: 400, body: JSON.stringify({ error: '都道府県は必須です。' }) };
     }
     
@@ -23,6 +26,7 @@ const handler: Handler = async (event: HandlerEvent) => {
         format: 'json',
         count: '20' // Get up to 20 results
     });
+    console.log("Hotpepper Search - Initial params:", params.toString());
 
     // Combine storeName and location for a general keyword search
     const prefectureToLargeAreaCode: { [key: string]: string } = {
