@@ -29,7 +29,6 @@ const defaultMenuItems: MenuItem[] = [
   
   { id: 'followed', label: 'フォロー中', icon: UserIcon },
   { id: 'followers', label: 'フォロワー', icon: UsersIcon },
-  { id: 'timeline', label: 'タイムライン', icon: ClockIcon },
   { id: 'map', label: 'マップ', icon: MapIcon },
   { id: 'analysis', label: 'AIに相談', icon: SparklesIcon },
   { id: 'settings', label: '設定', icon: SettingsIcon },
@@ -134,7 +133,6 @@ const Sidebar: React.FC<SidebarProps> = ({
   };
 
   const handleFilterClick = (type: 'prefecture' | 'city', value: string) => {
-    if (isReadOnly) return;
     const newFilter = { type, value };
     const existingIndex = activeFilter.findIndex(f => f.type === type && f.value === value);
 
@@ -181,72 +179,71 @@ const Sidebar: React.FC<SidebarProps> = ({
         </button>
       </div>
 
-      {/* Main Navigation Menu */}
-      <nav className="flex-1 overflow-y-auto -mr-2 pr-2 mb-4 border-b border-light-border dark:border-dark-border pb-4">
-        <ul className="space-y-1">
-          {orderedMenuItems.map((item, index) => (
-            <li key={item.id} className="flex items-center group">
-              <button
-                onClick={() => {
-                  if (item.id === 'settings') {
-                    setIsEditingMenu(!isEditingMenu);
-                  } else {
-                    onSelectMenuItem(item.id);
+      {/* Main Navigation Menu - Hide if it's a shared link */}
+      {!isReadOnly && (
+        <nav className="flex-1 overflow-y-auto -mr-2 pr-2 mb-4 border-b border-light-border dark:border-dark-border pb-4">
+          <ul className="space-y-1">
+            {orderedMenuItems.map((item, index) => (
+              <li key={item.id} className="flex items-center group">
+                <button
+                  onClick={() => {
+                    onSelectMenuItem(item.id as View);
                     onClose();
-                    setIsEditingMenu(false); // Exit edit mode after selection
-                  }
-                }}
-                className={twMerge(
-                  "flex-1 flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                  currentView === item.id || (item.id === 'settings' && isEditingMenu)
-                    ? "bg-light-primary-soft-bg text-light-primary dark:bg-dark-primary-soft-bg dark:text-dark-primary"
-                    : "text-light-text-secondary dark:text-dark-text-secondary hover:bg-slate-100 dark:hover:bg-slate-700/50"
+                  }}
+                  className={twMerge(
+                    "flex-1 flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                    currentView === item.id
+                      ? "bg-light-primary-soft-bg text-light-primary dark:bg-dark-primary-soft-bg dark:text-dark-primary"
+                      : "text-light-text-secondary dark:text-dark-text-secondary hover:bg-slate-100 dark:hover:bg-slate-700/50"
+                  )}
+                >
+                  {item.icon && <item.icon className="w-5 h-5" />}
+                  {(!isCollapsed || (isOpen && window.innerWidth < 768)) && <span>{item.label}</span>}
+                </button>
+                {!isCollapsed && isEditingMenu && item.id !== 'settings' && ( // Don't allow reordering 'Settings'
+                  <div className="flex ml-2">
+                    <button
+                      onClick={() => moveMenuItem(index, 'up')}
+                      className="p-1 rounded-md hover:bg-slate-200 dark:hover:bg-slate-600/50"
+                      title="上に移動"
+                    >
+                      <ArrowUpIcon className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => moveMenuItem(index, 'down')}
+                      className="p-1 rounded-md hover:bg-slate-200 dark:hover:bg-slate-600/50"
+                      title="下に移動"
+                    >
+                      <ArrowDownIcon className="w-4 h-4" />
+                    </button>
+                  </div>
                 )}
-              >
-                {item.icon && <item.icon className="w-5 h-5" />}
-                {(!isCollapsed || (isOpen && window.innerWidth < 768)) && <span>{item.label}</span>}
-              </button>
-              {!isCollapsed && isEditingMenu && item.id !== 'settings' && ( // Don't allow reordering 'Settings'
-                <div className="flex ml-2">
-                  <button
-                    onClick={() => moveMenuItem(index, 'up')}
-                    className="p-1 rounded-md hover:bg-slate-200 dark:hover:bg-slate-600/50"
-                    title="上に移動"
-                  >
-                    <ArrowUpIcon className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => moveMenuItem(index, 'down')}
-                    className="p-1 rounded-md hover:bg-slate-200 dark:hover:bg-slate-600/50"
-                    title="下に移動"
-                  >
-                    <ArrowDownIcon className="w-4 h-4" />
-                  </button>
-                </div>
-              )}
-            </li>
-          ))}
-        </ul>
-      </nav>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      )}
 
       {/* Location Filtering Section */}
-      {!isReadOnly && (
-        <div className="flex-1 overflow-y-auto -mr-2 pr-2">
+      <div className="flex-1 overflow-y-auto -mr-2 pr-2">
           {!isCollapsed && (
             <>
               <h3 className="text-lg font-semibold text-light-text dark:text-dark-text mb-3">エリアで絞り込み</h3>
-              <div className="relative mb-4">
-                <input
-                  type="search"
-                  placeholder="エリアや店名で検索..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 text-sm bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md focus:ring-2 focus:ring-light-primary focus:border-light-primary placeholder:text-light-text-secondary dark:placeholder:text-dark-text-secondary"
-                />
-                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                  <SearchIcon className="w-5 h-5 text-light-text-secondary dark:text-dark-text-secondary" />
+              {/* Search input remains hidden if isReadOnly is true */}
+              {!isReadOnly && (
+                <div className="relative mb-4">
+                  <input
+                    type="search"
+                    placeholder="エリアや店名で検索..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 text-sm bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md focus:ring-2 focus:ring-light-primary focus:border-light-primary placeholder:text-light-text-secondary dark:placeholder:text-dark-text-secondary"
+                  />
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                    <SearchIcon className="w-5 h-5 text-light-text-secondary dark:text-dark-text-secondary" />
+                  </div>
                 </div>
-              </div>
+              )}
               {filteredPrefectures.length > 0 ? (
                 <ul className="space-y-1">
                   {filteredPrefectures.map((prefecture) => {
@@ -345,12 +342,13 @@ const Sidebar: React.FC<SidebarProps> = ({
             </>
           )}
           {isCollapsed && (
-            <div className="flex items-center justify-center h-full">
+            <div className="flex items-center justify-center h-full flex-col"> {/* Added flex-col for stacking */}
               <MapPinIcon className="w-6 h-6 text-light-text-secondary dark:text-dark-text-secondary" />
+              {/* Always show text for area filter, even when collapsed, especially on mobile */}
+              <span className="text-sm text-light-text-secondary dark:text-dark-text-secondary mt-1">エリアで絞り込み</span>
             </div>
           )}
         </div>
-      )}
       </aside>
   );
 };

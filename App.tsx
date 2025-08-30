@@ -43,6 +43,7 @@ import UserIcon from './components/icons/UserIcon';
 import ClockIcon from './components/icons/ClockIcon';
 import UsersIcon from './components/icons/UsersIcon';
 import MapIcon from './components/icons/MapIcon';
+import SettingsPage from './components/SettingsPage';
 
 
 export type Theme = 'light' | 'dark';
@@ -739,7 +740,7 @@ const App: React.FC = () => {
                   <div className="flex items-center gap-4 justify-start flex-shrink-0">
                      <button onClick={() => setIsSidebarOpen(true)} className={`p-2 md:hidden ${!isSidebarCollapsed || (isReadOnlyMode && !lockedFilters) ? 'md:invisible' : ''}`}><MenuIcon /></button>
                      {!(isReadOnlyMode && lockedFilters) && <button onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)} className="hidden md:flex p-2 items-center gap-2 text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-md">
-                        {isSidebarCollapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />} <span>エリア</span>
+                        {isSidebarCollapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />} <span>メニュー</span>
                      </button>}
                   </div>
                   <div className="flex items-center gap-2 justify-center flex-grow">
@@ -947,7 +948,27 @@ const App: React.FC = () => {
                 </div>
               )}
               {view === 'map' && (
-                mapsApiKey ? <MapView restaurants={displayedRestaurants} apiKey={mapsApiKey} /> : <div>マップの読み込み中...</div>
+                isMapsApiKeyLoading ? (
+                  <div className="text-center flex items-center justify-center py-16 px-6 bg-light-card dark:bg-dark-card rounded-ui-medium shadow-soft border border-light-border dark:border-dark-border" style={{ height: 'calc(100vh - 340px)', width: '100%' }}>
+                    <div>
+                      <SmallLoadingSpinner />
+                      <p className="text-light-text dark:text-dark-text mt-4">マップAPIキーを読み込み中...</p>
+                    </div>
+                  </div>
+                ) : mapsApiError ? (
+                  <div className="text-center flex items-center justify-center py-16 px-6 bg-light-card dark:bg-dark-card rounded-ui-medium shadow-soft border border-light-border dark:border-dark-border" style={{ height: 'calc(100vh - 340px)', width: '100%' }}>
+                    <div>
+                      <h2 className="text-2xl font-semibold text-light-text dark:text-dark-text">マップの読み込みに失敗しました</h2>
+                      <p className="text-light-text-secondary dark:text-dark-text-secondary mt-2">エラー: {mapsApiError.message}</p>
+                      <p className="text-light-text-secondary dark:text-dark-text-secondary mt-2">Google Maps APIキーが正しく設定されているか確認してください。</p>
+                    </div>
+                  </div>
+                ) : mapsApiKey ? (
+                  <MapView restaurants={displayedRestaurants} apiKey={mapsApiKey} />
+                ) : (
+                  // Fallback for unexpected state, though covered by mapsApiError or isMapsApiKeyLoading
+                  <div>マップの読み込み中...</div>
+                )
               )}
               {view === 'analysis' && !isReadOnlyMode && user && (
                 <AIAnalysisView 
