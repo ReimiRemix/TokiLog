@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gourmet Log</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      // Avoids FOUC (Flash of Unstyled Content) by setting the theme class before React loads.
+      (function() {
+        try {
+          var theme = localStorage.getItem('theme');
+          // Default to dark mode if no theme is set
+          if (theme === 'dark' || !theme) {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+        } catch (_) {}
+      })();
+
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              'light-bg': '#f8fafc',    // slate-50
+              'dark-bg': '#0f172a',     // slate-900
+              'light-card': '#ffffff',
+              'dark-card': '#1e293b',    // slate-800
+              'light-border': '#e2e8f0', // slate-200
+              'dark-border': '#334155',  // slate-700
+              'light-text': '#1e293b',   // slate-800
+              'dark-text': '#e2e8f0',    // slate-200
+              'light-text-secondary': '#64748b', // slate-500
+              'dark-text-secondary': '#94a3b8',  // slate-400
+              'light-primary': '#4f46e5', // indigo-600
+              'dark-primary': '#818cf8',  // indigo-400
+              'light-primary-hover': '#4338ca', // indigo-700
+              'dark-primary-hover': '#a5b4fc',  // indigo-300
+              'light-primary-soft-bg': '#eef2ff', // indigo-50
+              'dark-primary-soft-bg': '#312e81',  // indigo-900
+            },
+            borderRadius: {
+              'ui-medium': '0.75rem', // rounded-xl
+            },
+            boxShadow: {
+              'soft': '0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.07)',
+              'soft-lg': '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)'
+            },
+            keyframes: {
+              'slide-down': {
+                'from': { opacity: '0', transform: 'translateY(-10px)' },
+                'to': { opacity: '1', transform: 'translateY(0)' },
+              }
+            },
+            animation: {
+              'slide-down': 'slide-down 0.5s ease-out forwards',
+            }
+          }
+        }
+      }
+    </script>
+  <script type="importmap">
+{
+  "imports": {
+  
+    "react": "https://esm.sh/react@^18.2.0",
+    "react/": "https://esm.sh/react@^18.2.0/",
+    "react-dom": "https://esm.sh/react-dom@^18.2.0",
+    "react-dom/": "https://esm.sh/react-dom@^18.2.0/",
+    "react-dom/client": "https://esm.sh/react-dom@^18.2.0/client",
+    "@google/genai": "https://esm.sh/@google/genai@^1.15.0",
+    "tailwind-merge": "https://esm.sh/tailwind-merge@2.4.0",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2",
+    "firebase/": "https://esm.sh/firebase@^12.1.0/",
+    "@netlify/functions": "https://esm.sh/@netlify/functions@^4.2.2",
+    "@vis.gl/react-google-maps": "https://esm.sh/@vis.gl/react-google-maps@^1.2.0",
+    "@googlemaps/markerclusterer": "https://esm.sh/@googlemaps/markerclusterer@2.0.15",
+    "@tanstack/react-query": "https://esm.sh/@tanstack/react-query@5.51.1"
+  }
+}
+</script>
+</head>
+  <body class="bg-light-bg text-light-text dark:bg-dark-bg dark:text-dark-text transition-colors duration-300">
+    <div id="root"></div>
+    <script type="module" src="./index.tsx"></script>
+  </body>
+</html>

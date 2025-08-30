@@ -1,0 +1,29 @@
+{
+  "name": "gourmet-log",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build && npm run functions:build",
+    "functions:build": "tsc -p netlify/functions",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "@google/genai": "^1.15.0",
+    "tailwind-merge": "2.4.0",
+    "@supabase/supabase-js": "2",
+    "firebase": "^12.1.0",
+    "@netlify/functions": "^4.2.2",
+    "@vis.gl/react-google-maps": "^1.2.0",
+    "@googlemaps/markerclusterer": "2.0.15",
+    "@tanstack/react-query": "5.51.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.14.0",
+    "typescript": "~5.8.2",
+    "vite": "^6.2.0"
+  }
+}
