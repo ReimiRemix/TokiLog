@@ -36,6 +36,8 @@ const SettingsPage: React.FC = () => {
         }
       }
       setLoading(false);
+      console.log("SettingsPage: Loading state after fetch:", false);
+      console.log("SettingsPage: User data after fetch:", user);
     };
     fetchUserData();
   }, []);
