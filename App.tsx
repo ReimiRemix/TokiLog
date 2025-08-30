@@ -597,6 +597,11 @@ const App: React.FC = () => {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setUser(null);
+    setCurrentViewedUserId(null); // ログアウト時に閲覧中のユーザーIDをクリア
+    setIsReadOnlyMode(false); // ログアウト時に閲覧者モードを解除
+    setShareId(null); // 共有IDをクリア
+    sessionStorage.removeItem('shareId'); // セッションストレージからもクリア
+    window.location.href = '/'; // ログインTOPへ強制的にリダイレクト
   };
   
   const handleScrollToRestaurant = (restaurantId: string) => {
@@ -720,7 +725,7 @@ const App: React.FC = () => {
       
       
       
-      {isReadOnlyMode && showReadOnlyBanner && <ReadOnlyBanner isFiltered={!!lockedFilters} />}
+      {isReadOnlyMode && showReadOnlyBanner && !shareId && <ReadOnlyBanner isFiltered={!!lockedFilters} />}
       <div className={`flex h-screen ${isReadOnlyMode ? 'pt-10' : ''}`}>
         <Sidebar
           restaurants={restaurants}
@@ -744,7 +749,7 @@ const App: React.FC = () => {
             />
         )}
         <main 
-          className={`flex-1 overflow-y-auto transition-all duration-300 ease-in-out ${!isSidebarCollapsed || (isReadOnlyMode && !lockedFilters) ? 'md:ml-80' : ''}`}
+          className={`flex-1 overflow-y-auto transition-all duration-300 ease-in-out ${isSidebarCollapsed ? 'md:ml-20' : 'md:ml-80'}`}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
         >

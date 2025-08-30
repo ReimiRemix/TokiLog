@@ -14,8 +14,8 @@ const handler: Handler = async (event: HandlerEvent) => {
 
   try {
     const query = JSON.parse(event.body || '{}') as SearchQuery;
-    if (!query.prefecture || !query.storeName) {
-      return { statusCode: 400, body: JSON.stringify({ error: '都道府県と店舗名・キーワードは必須です。' }) };
+    if (!query.prefecture) {
+      return { statusCode: 400, body: JSON.stringify({ error: '都道府県は必須です。' }) };
     }
     
     const params = new URLSearchParams({

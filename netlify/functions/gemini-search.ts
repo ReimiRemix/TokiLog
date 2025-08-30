@@ -77,10 +77,10 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
 
   try {
     const query = JSON.parse(event.body || '{}') as SearchQuery;
-    if (!query.prefecture || !query.storeName) {
+    if (!query.prefecture) {
         return {
             statusCode: 400,
-            body: JSON.stringify({ error: '都道府県と店舗名は必須です。' }),
+            body: JSON.stringify({ error: '都道府県は必須です。' }),
         };
     }
 

@@ -62,7 +62,7 @@ const RestaurantInput: React.FC<RestaurantInputProps> = ({ onSearch, isLoading }
           </div>
 
           <div>
-            <label htmlFor="storeName" className="block text-sm font-medium text-light-text dark:text-dark-text">店名・キーワード <span className="text-red-500">*</span></label>
+            <label htmlFor="storeName" className="block text-sm font-medium text-light-text dark:text-dark-text">店名・キーワード（任意）</label>
              <input
                 type="text"
                 id="storeName"
@@ -72,13 +72,12 @@ const RestaurantInput: React.FC<RestaurantInputProps> = ({ onSearch, isLoading }
                 placeholder="例: 美味しいイタリアン, ラーメン"
                 className={formInputClasses}
                 disabled={isLoading}
-                required
             />
           </div>
 
           <button
               type="submit"
-              disabled={isLoading || isFormInvalid}
+              disabled={isLoading || !query.prefecture.trim()}
               className="flex items-center justify-center w-full bg-light-primary text-white font-bold px-6 py-3 rounded-lg hover:bg-light-primary-hover dark:bg-dark-primary dark:text-slate-900 dark:hover:bg-dark-primary-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-light-primary transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
               {isLoading ? (
