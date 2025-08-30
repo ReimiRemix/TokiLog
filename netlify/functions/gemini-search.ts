@@ -109,7 +109,7 @@ Your ONLY function is to act as a data processing pipeline. You will receive a q
 
     // Generate content with grounding and system instruction
     const response: GenerateContentResponse = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-1.5-flash",
       contents: fullQuery,
       config: {
         systemInstruction: prompt,
