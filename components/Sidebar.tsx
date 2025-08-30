@@ -26,7 +26,7 @@ type MenuItem = {
 const defaultMenuItems: MenuItem[] = [
   { id: 'favorites', label: 'お気に入り', icon: StarIcon },
   { id: 'search', label: 'お店を探す', icon: SearchIcon },
-  
+  { id: 'userSearch', label: 'ユーザーを探す', icon: SearchIcon },
   { id: 'followed', label: 'フォロー中', icon: UserIcon },
   { id: 'followers', label: 'フォロワー', icon: UsersIcon },
   { id: 'map', label: 'マップ', icon: MapIcon },
