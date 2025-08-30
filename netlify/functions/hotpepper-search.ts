@@ -84,17 +84,14 @@ const handler: Handler = async (event: HandlerEvent) => {
       params.append('large_area', largeAreaCode);
     }
 
-    // Collect all search terms into a single keyword string for an AND search.
-    const keywords = [];
-    if (query.city) {
-      keywords.push(query.city);
-    }
-    if (query.storeName) {
-      keywords.push(query.storeName);
-    }
+    // Combine all available fields into a single keyword for a robust AND search.
+    // This ensures that even a prefecture-only search works as the API requires a keyword.
+    const keywordString = [query.prefecture, query.city, query.storeName]
+      .filter(Boolean) // Remove any empty/null values
+      .join(' '); // Join with spaces
 
-    if (keywords.length > 0) {
-      params.append('keyword', keywords.join(' '));
+    if (keywordString) {
+      params.append('keyword', keywordString);
     }
     
     const url = `https://webservice.recruit.co.jp/hotpepper/shop/v1/?${params.toString()}`;
