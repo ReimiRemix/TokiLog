@@ -84,9 +84,12 @@ const handler: Handler = async (event: HandlerEvent) => {
       params.append('large_area', largeAreaCode);
     }
 
-    const keyword = `${query.city || ''} ${query.storeName}`.trim();
-    if (keyword) {
-        params.append('keyword', keyword);
+    // Use 'address' for city and 'name_any' for the store name for better accuracy
+    if (query.city) {
+      params.append('address', query.city);
+    }
+    if (query.storeName) {
+      params.append('name_any', query.storeName);
     }
     
     const url = `https://webservice.recruit.co.jp/hotpepper/gourmet/v1/?${params.toString()}`;

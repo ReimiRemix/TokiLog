@@ -37,11 +37,11 @@ const RestaurantInput: React.FC<RestaurantInputProps> = ({ onSearch, isLoading }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (isFormInvalid || isLoading) return;
+    if (!query.prefecture.trim() || isLoading) return;
     onSearch(query);
   };
   
-  const isFormInvalid = !query.prefecture.trim() || !query.storeName.trim();
+  const isFormInvalid = !query.prefecture.trim();
 
   return (
     <div className="bg-light-card dark:bg-dark-card p-6 rounded-ui-medium shadow-soft border border-light-border dark:border-dark-border animate-slide-down">

@@ -327,20 +327,16 @@ const App: React.FC = () => {
       }
       return (await response.json()) as HotpepperRestaurant[];
     },
-    onSuccess: (data, variables) => {
+    onSuccess: (data) => {
       setSearchResults(data);
-      if (data.length === 0) {
-        // Hotpepper found nothing, fallback to Gemini
-        geminiSearchMutation.mutate(variables);
-        setGeminiSearchTriggered(true);
-      }
+      // No automatic fallback to Gemini here.
     },
-    onError: (error, variables) => {
+    onError: (error) => {
       setSearchResults([]);
-      console.error("Hotpepper search failed, falling back to Gemini:", error);
-      // Hotpepper API failed, fallback to Gemini
-      geminiSearchMutation.mutate(variables);
-      setGeminiSearchTriggered(true);
+      console.error("Hotpepper search failed:", error);
+      // No automatic fallback to Gemini here.
+      // Optionally, inform the user that Hotpepper search failed and they can try AI search.
+      alert(`ホットペッパーでの検索に失敗しました。AI検索を試してみてください。エラー: ${error.message}`);
     },
   });
 
@@ -749,7 +745,7 @@ const App: React.FC = () => {
             />
         )}
         <main 
-          className={`flex-1 overflow-y-auto transition-all duration-300 ease-in-out ${isSidebarCollapsed ? 'md:ml-20' : 'md:ml-80'}`}
+          className={`flex-1 overflow-y-auto transition-all duration-300 ease-in-out`}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
         >
@@ -793,7 +789,7 @@ const App: React.FC = () => {
                       {addRestaurantSuccessMessage}
                     </div>
                   )}
-                  {hotpepperSearchMutation.isSuccess && searchResults.length > 0 && !geminiSearchTriggered && (
+                  {hotpepperSearchMutation.isSuccess && !geminiSearchTriggered && (
                       <div className="text-center my-6 p-4 bg-light-primary-soft-bg dark:bg-dark-primary-soft-bg rounded-ui-medium">
                           <button
                               onClick={() => {

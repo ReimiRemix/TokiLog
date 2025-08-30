@@ -117,13 +117,29 @@ const UserSearch: React.FC = () => {
       if (isFollowing(targetUserId)) throw new Error("既にフォローしています。");
       if (hasSentRequest(targetUserId)) throw new Error("既にフォローリクエストを送信済みです。");
 
-      const { error } = await supabase.rpc('send_follow_request', { p_target_user_id: targetUserId });
-      if (error) {
-        throw error;
+      // 1. Send follow request
+      const { error: rpcError } = await supabase.rpc('send_follow_request', { p_target_user_id: targetUserId });
+      if (rpcError) {
+        throw rpcError;
+      }
+
+      // 2. Create a notification for the recipient
+      const { error: notificationError } = await supabase.from('notifications').insert({
+        user_id: targetUserId, // The user who will receive the notification
+        type: 'follow_request',
+        actor_id: currentUser.id, // The user who performed the action
+        entity_id: null, // No specific entity like a restaurant post
+      });
+
+      if (notificationError) {
+        // Log the error but don't block the user flow, as the main action (follow request) succeeded.
+        console.error("Failed to create follow request notification:", notificationError);
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sentFollowRequests'] });
+      // Also invalidate the notification count query to force a refetch
+      queryClient.invalidateQueries({ queryKey: ['pendingRequestsCount'] });
       alert('フォローリクエストを送信しました！');
     },
     onError: (err: any) => {

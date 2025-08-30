@@ -168,7 +168,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         "fixed inset-y-0 left-0 z-50 h-full bg-light-card dark:bg-dark-card border-r border-light-border dark:border-dark-border p-4 flex flex-col",
         "transform transition-transform duration-300 ease-in-out",
         isOpen ? "translate-x-0 w-80" : "-translate-x-full w-80", // Mobile: always full width when open
-        "md:relative md:translate-x-0", // Desktop: always visible
+        "md:fixed md:translate-x-0", // Desktop: always visible and fixed
         isCollapsed ? "md:w-20" : "md:w-80" // Desktop: control width based on collapsed state
       )}
     >
