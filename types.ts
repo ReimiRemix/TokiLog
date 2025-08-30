@@ -1,6 +1,6 @@
 
 
-export type View = 'favorites' | 'search' | 'map' | 'analysis' | 'userSearch' | 'followed' | 'timeline' | 'areaList' | 'followers' | 'settings';
+export type View = 'favorites' | 'search' | 'map' | 'analysis' | 'userSearch' | 'followed' | 'timeline' | 'areaList' | 'followers' | 'settings' | 'pendingRequests';
 export type SidebarFilter = { type: 'prefecture' | 'city'; value: string };
 
 export interface Source {

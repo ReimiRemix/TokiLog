@@ -15,3 +15,20 @@ export const getFollowers = async (userId: string): Promise<Follower[]> => {
 
   return data as Follower[];
 };
+
+export interface FollowingUser {
+  followed_user_id: string;
+}
+
+export const getFollowingUsers = async (userId: string): Promise<FollowingUser[]> => {
+  console.log("getFollowingUsers: Calling RPC with user ID:", userId);
+  const { data, error } = await supabase.rpc('get_following_users', { p_user_id: userId });
+
+  if (error) {
+    console.error("getFollowingUsers: RPC error:", error);
+    throw new Error(`フォロー中のユーザーの取得に失敗しました: ${error.message}`);
+  }
+
+  console.log("getFollowingUsers: RPC successful, data:", data);
+  return data as FollowingUser[];
+};

@@ -14,11 +14,12 @@ import SparklesIcon from './icons/SparklesIcon';
 import SettingsIcon from './icons/SettingsIcon';
 import ArrowUpIcon from './icons/ArrowUpIcon';
 import ArrowDownIcon from './icons/ArrowDownIcon';
+import BellIcon from './icons/BellIcon'; // Import BellIcon for pending requests
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import FollowRequestList from './FollowRequestList';
 
 type MenuItem = {
-  id: View | 'settings'; // Add 'settings' to View type for internal use
+  id: View | 'settings' | 'pendingRequests'; // Add 'pendingRequests' to View type for internal use
   label: string;
   icon: React.ComponentType<any>;
 };
@@ -29,6 +30,7 @@ const defaultMenuItems: MenuItem[] = [
   { id: 'userSearch', label: 'ユーザーを探す', icon: SearchIcon },
   { id: 'followed', label: 'フォロー中', icon: UserIcon },
   { id: 'followers', label: 'フォロワー', icon: UsersIcon },
+  { id: 'pendingRequests', label: '保留中リクエスト', icon: BellIcon }, // New menu item
   { id: 'map', label: 'マップ', icon: MapIcon },
   { id: 'analysis', label: 'AIに相談', icon: SparklesIcon },
   { id: 'settings', label: '設定', icon: SettingsIcon },
@@ -44,7 +46,7 @@ interface SidebarProps {
   onClose: () => void;
   isCollapsed: boolean;
   isReadOnly: boolean;
-  onSelectMenuItem: (viewId: View) => void;
+  onSelectMenuItem: (viewId: View | 'pendingRequests') => void; // Update type here
   currentView: View;
 }
 

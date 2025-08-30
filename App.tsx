@@ -44,6 +44,7 @@ import ClockIcon from './components/icons/ClockIcon';
 import UsersIcon from './components/icons/UsersIcon';
 import MapIcon from './components/icons/MapIcon';
 import SettingsPage from './components/SettingsPage';
+import PendingRequestsList from './components/PendingRequestsList';
 
 
 export type Theme = 'light' | 'dark';
@@ -99,6 +100,7 @@ const App: React.FC = () => {
   const [restaurantForLocationEdit, setRestaurantForLocationEdit] = useState<Restaurant | null>(null);
   const [restaurantToDelete, setRestaurantToDelete] = useState<{id: string, name: string} | null>(null);
   const [restaurantToUpdate, setRestaurantToUpdate] = useState<Restaurant | null>(null);
+  const [addRestaurantSuccessMessage, setAddRestaurantSuccessMessage] = useState<string | null>(null);
   
   const [isReadOnlyMode, setIsReadOnlyMode] = useState(false);
 
@@ -416,12 +418,15 @@ const App: React.FC = () => {
       // Invalidation for notifications is now handled by the realtime subscription,
       // but we keep this one for the user who performed the action, ensuring an immediate update.
       queryClient.invalidateQueries({ queryKey: ['notifications', user?.id] });
-      setView('favorites');
+      setAddRestaurantSuccessMessage(`「${data.name}」をお気に入りに追加しました！`);
       setIsManualAddModalOpen(false);
-      setSearchResults([]);
-      setCurrentSearchQuery(null);
+      // setSearchResults([]); // Keep search results visible
+      // setCurrentSearchQuery(null); // Keep current search query
     },
-    onError: (error) => alert(`エラー: ${error instanceof Error ? error.message : '不明なエラー'}`),
+    onError: (error) => {
+      setAddRestaurantSuccessMessage(null);
+      alert(`エラー: ${error instanceof Error ? error.message : '不明なエラー'}`);
+    },
   });
 
   const updateRestaurantMutation = useMutation({
@@ -552,6 +557,7 @@ const App: React.FC = () => {
     setSearchResults([]);
     setCurrentSearchQuery(query);
     setGeminiSearchTriggered(false);
+    setAddRestaurantSuccessMessage(null); // Clear success message on new search
     hotpepperSearchMutation.mutate(query);
   };
   
@@ -769,6 +775,11 @@ const App: React.FC = () => {
               {view === 'search' && !isReadOnlyMode && (
                 <>
                   <RestaurantInput onSearch={handleSearch} isLoading={hotpepperSearchMutation.isPending || geminiSearchMutation.isPending} />
+                  {addRestaurantSuccessMessage && (
+                    <div className="p-4 mb-4 bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200 rounded-md">
+                      {addRestaurantSuccessMessage}
+                    </div>
+                  )}
                   {hotpepperSearchMutation.isSuccess && searchResults.length > 0 && !geminiSearchTriggered && (
                       <div className="text-center my-6 p-4 bg-light-primary-soft-bg dark:bg-dark-primary-soft-bg rounded-ui-medium">
                           <button
@@ -986,6 +997,9 @@ const App: React.FC = () => {
                   setSelectedFollowedUserId(userId);
                   setView('followed'); // Switch to followed view to show their restaurants
                 }} />
+              )}
+              {view === 'settings' && !isReadOnlyMode && (
+                <SettingsPage />
               )}
 
             </div>

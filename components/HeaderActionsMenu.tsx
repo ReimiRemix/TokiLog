@@ -9,7 +9,7 @@ import RefreshPageIcon from './icons/RefreshPageIcon';
 import LogOutIcon from './icons/LogOutIcon';
 import ThemeToggle from './ThemeToggle';
 import { twMerge } from 'tailwind-merge';
-import FollowRequestList from './FollowRequestList';
+// import FollowRequestList from './FollowRequestList'; // Removed from here
 
 interface HeaderActionsMenuProps {
   user: User;
@@ -129,10 +129,7 @@ const HeaderActionsMenu: React.FC<HeaderActionsMenuProps> = ({ user, onScrollToR
                             <button onClick={() => markAllAsReadMutation.mutate()} disabled={markAllAsReadMutation.isPending} className="w-full text-center mt-2 text-xs font-semibold text-light-primary dark:text-dark-primary hover:opacity-80 transition-opacity disabled:opacity-50">すべて既読にする</button>
                         )}
                     </div>
-                    <div className="p-2 border-b border-light-border dark:border-dark-border">
-                        <h3 className="font-semibold text-light-text dark:text-dark-text mb-2">フォローリクエスト</h3>
-                        <FollowRequestList />
-                    </div>
+                    {/* Removed FollowRequestList from here */}
                     <div className="p-2 border-b border-light-border dark:border-dark-border">
                         <ThemeToggle theme={theme} setTheme={setTheme} />
                     </div>
