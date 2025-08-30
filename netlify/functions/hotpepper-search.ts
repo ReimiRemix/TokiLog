@@ -84,16 +84,17 @@ const handler: Handler = async (event: HandlerEvent) => {
       params.append('large_area', largeAreaCode);
     }
 
-    // Set search parameters based on what is provided
+    // Collect all search terms into a single keyword string for an AND search.
+    const keywords = [];
+    if (query.city) {
+      keywords.push(query.city);
+    }
     if (query.storeName) {
-      // If a store name is provided, use specific parameters for a targeted search
-      params.append('name_any', query.storeName);
-      if (query.city) {
-        params.append('address', query.city);
-      }
-    } else if (query.city) {
-      // If only a city is provided, use it as a general keyword for a broader area search
-      params.append('keyword', query.city);
+      keywords.push(query.storeName);
+    }
+
+    if (keywords.length > 0) {
+      params.append('keyword', keywords.join(' '));
     }
     
     const url = `https://webservice.recruit.co.jp/hotpepper/shop/v1/?${params.toString()}`;
