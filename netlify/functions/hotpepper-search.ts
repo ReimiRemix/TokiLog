@@ -24,13 +24,65 @@ const handler: Handler = async (event: HandlerEvent) => {
         count: '20' // Get up to 20 results
     });
 
-    // Use `name_any` for a more precise name search (partial match allowed)
-    params.append('name_any', query.storeName);
+    // Combine storeName and location for a general keyword search
+    const prefectureToLargeAreaCode: { [key: string]: string } = {
+      '北海道': 'Z01',
+      '青森県': 'Z02',
+      '岩手県': 'Z02',
+      '宮城県': 'Z02',
+      '秋田県': 'Z02',
+      '山形県': 'Z02',
+      '福島県': 'Z02',
+      '茨城県': 'Z03',
+      '栃木県': 'Z03',
+      '群馬県': 'Z03',
+      '埼玉県': 'Z03',
+      '千葉県': 'Z03',
+      '東京都': 'Z03',
+      '神奈川県': 'Z03',
+      '新潟県': 'Z04',
+      '富山県': 'Z04',
+      '石川県': 'Z04',
+      '福井県': 'Z04',
+      '山梨県': 'Z05',
+      '長野県': 'Z05',
+      '岐阜県': 'Z06',
+      '静岡県': 'Z06',
+      '愛知県': 'Z06',
+      '三重県': 'Z06',
+      '滋賀県': 'Z07',
+      '京都府': 'Z07',
+      '大阪府': 'Z07',
+      '兵庫県': 'Z07',
+      '奈良県': 'Z07',
+      '和歌山県': 'Z07',
+      '鳥取県': 'Z08',
+      '島根県': 'Z08',
+      '岡山県': 'Z08',
+      '広島県': 'Z08',
+      '山口県': 'Z08',
+      '徳島県': 'Z09',
+      '香川県': 'Z09',
+      '愛媛県': 'Z09',
+      '高知県': 'Z09',
+      '福岡県': 'Z10',
+      '佐賀県': 'Z10',
+      '長崎県': 'Z10',
+      '熊本県': 'Z10',
+      '大分県': 'Z10',
+      '宮崎県': 'Z10',
+      '鹿児島県': 'Z10',
+      '沖縄県': 'Z11',
+    };
 
-    // Use `keyword` for location context to narrow down results
-    const locationKeyword = `${query.prefecture} ${query.city || ''}`.trim();
-    if (locationKeyword) {
-        params.append('keyword', locationKeyword);
+    const largeAreaCode = prefectureToLargeAreaCode[query.prefecture];
+    if (largeAreaCode) {
+      params.append('large_area', largeAreaCode);
+    }
+
+    const keyword = `${query.city || ''} ${query.storeName}`.trim();
+    if (keyword) {
+        params.append('keyword', keyword);
     }
     
     const url = `https://webservice.recruit.co.jp/hotpepper/gourmet/v1/?${params.toString()}`;

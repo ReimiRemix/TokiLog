@@ -413,12 +413,12 @@ const App: React.FC = () => {
         }
       }
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['restaurants', user?.id] });
       // Invalidation for notifications is now handled by the realtime subscription,
       // but we keep this one for the user who performed the action, ensuring an immediate update.
       queryClient.invalidateQueries({ queryKey: ['notifications', user?.id] });
-      setAddRestaurantSuccessMessage(`「${data.name}」をお気に入りに追加しました！`);
+      setAddRestaurantSuccessMessage(`「${variables.name}」をお気に入りに追加しました！`);
       setIsManualAddModalOpen(false);
       // setSearchResults([]); // Keep search results visible
       // setCurrentSearchQuery(null); // Keep current search query
