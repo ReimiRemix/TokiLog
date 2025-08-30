@@ -699,6 +699,13 @@ const App: React.FC = () => {
     return null;
   }, [sidebarFilters, genreFilters]);
 
+  const filteredSearchResults = useMemo(() => {
+    if (!currentSearchQuery?.prefecture || searchResults.length === 0) {
+      return searchResults;
+    }
+    return searchResults.filter(result => result.prefecture === currentSearchQuery.prefecture);
+  }, [searchResults, currentSearchQuery?.prefecture]);
+
   // --- Render logic ---
   if (authLoading) {
     return <div className="flex items-center justify-center h-screen"><SmallLoadingSpinner /></div>;
@@ -796,7 +803,7 @@ const App: React.FC = () => {
                       </div>
                   )}
                   <SearchResultList 
-                    results={searchResults} 
+                    results={filteredSearchResults} 
                     onAddToFavorites={addRestaurantMutation.mutate}
                     favoriteRestaurants={restaurants}
                     isAddingToFavorites={addRestaurantMutation.isPending}
