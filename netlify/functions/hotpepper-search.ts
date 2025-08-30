@@ -110,13 +110,11 @@ const handler: Handler = async (event: HandlerEvent) => {
     }
     
     const formattedResults: HotpepperRestaurant[] = (data.results.shop || []).map((shop: any) => {
-        const address = (shop.address || '').trim();
-        // If prefecture cannot be parsed from address string, assign a value that will fail the filter.
-        const prefectureMatch = address.match(/^(\S+[都道府県])/);
-        const prefecture = prefectureMatch ? prefectureMatch[1] : 'PARSE_ERROR';
+        // Use the user's query for the prefecture as it's more reliable than parsing.
+        const prefecture = query.prefecture;
         
-        const cityMatch = address.replace(prefecture, '').match(/^\s*(\S+[市区町村])/);
-        const city = cityMatch ? cityMatch[1] : query.city || '不明';
+        // Use the service area from the API for the city, falling back to the user's query.
+        const city = shop.service_area?.name || query.city || '不明';
 
         return {
             id: shop.id,
