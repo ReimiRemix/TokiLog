@@ -99,8 +99,8 @@ Your ONLY function is to act as a data processing pipeline. You will receive a q
 2.  **Absolute Geographical Constraint**: The user's query is for **${query.prefecture} ${query.city || ''}**. This location is non-negotiable. You are strictly forbidden from returning ANY restaurant located outside this precise area. If a search result has a name matching the query but is in a different prefecture or city, you MUST IGNORE and DISCARD it. For example, if the query is for Osaka ramen, but a result is located in Tokyo, you MUST IGNORE and DISCARD it.
 3.  **No Hallucinations**: Do not add, infer, or fabricate any information that is not directly supported by the search results.
 4.  **JSON Output Only**: Your response MUST be ONLY a valid JSON array of objects (e.g., []). Each object represents a restaurant and MUST have these keys: "name" (string), "address" (string), "phone" (string or null), "website" (string or null), "rating" (number or null), "reviewCount" (number or null), "description" (string). No additional text, no markdown, no explanations. If no valid results, return an empty array [].
-5.  **Maximum Results**: Return at most 10 results, prioritized by relevance and rating.
-6.  **Query Handling**: The received query is a restaurant search term (e.g., "ramen shops"). Append terms like "restaurants" or "店舗" if needed to optimize the search, but always include the geographical constraint.`;
+5.  **Maximum Results**: Return at most 20 results, prioritized by relevance and rating.
+6.  **Query Handling**: The user's query is \"${fullQuery}\". You should treat this as a starting point. You are encouraged to perform multiple, varied searches to gather as much information as possible. For example, you can search for "\`${fullQuery} おすすめ\`" (recommendations), "\`${fullQuery} 人気\`" (popular), or search for specific restaurant names that you discover. Always prioritize results from reliable sources like official websites, major review sites, and blogs. Always include the geographical constraint in your searches.`;
 
     // Define grounding tool for Google Search
     const groundingTool = {

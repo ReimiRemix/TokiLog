@@ -18,11 +18,6 @@ interface ReceivedFollowRequest {
   follower_id: string;
 }
 
-interface SentFollowRequest {
-  request_id: string;
-  addressee_id: string;
-}
-
 interface UserSearchProps {
   user: User;
 }
@@ -33,28 +28,12 @@ const UserSearch: React.FC<UserSearchProps> = ({ user: currentUser }) => {
   const [searchResults, setSearchResults] = useState<UserProfile[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [searchAttempted, setSearchAttempted] = useState(false);
 
   const { data: followingUsers = [], isLoading: isLoadingFollowing } = useQuery({
     queryKey: ['followingUsers', currentUser?.id],
     queryFn: () => getFollowingUsers(currentUser!.id),
     enabled: !!currentUser?.id,
-    onSuccess: (data) => {
-      console.log("UserSearch: Following users data:", data);
-    },
-    onError: (err) => {
-      console.error("UserSearch: Error fetching following users:", err);
-    }
-  });
-
-  const { data: receivedRequests = [], isLoading: isLoadingReceivedRequests } = useQuery<ReceivedFollowRequest[]>({
-    queryKey: ['receivedFollowRequests', currentUser?.id],
-    queryFn: async () => {
-      if (!currentUser) return [];
-      const { data, error } = await supabase.rpc('get_pending_follow_requests');
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!currentUser,
   });
 
   const { data: sentRequests = [], isLoading: isLoadingSentRequests } = useQuery<SentFollowRequest[]>({
@@ -75,10 +54,11 @@ const UserSearch: React.FC<UserSearchProps> = ({ user: currentUser }) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
-    setSearchResults([]);
+    setSearchAttempted(true);
 
     if (!searchTerm.trim()) {
       setError('検索語を入力してください。');
+      setSearchResults([]);
       setIsLoading(false);
       return;
     }
@@ -99,14 +79,19 @@ const UserSearch: React.FC<UserSearchProps> = ({ user: currentUser }) => {
     }
   };
 
+  const handleSearchTermChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+    setSearchAttempted(false); // Reset on new input
+    setSearchResults([]); // Clear previous results
+    setError(null);
+  };
+
   const sendFollowRequestMutation = useMutation({
     mutationFn: async (targetUserId: string) => {
       if (!currentUser) throw new Error("ユーザーがログインしていません。");
       if (isFollowing(targetUserId)) throw new Error("既にフォローしています。");
       if (hasSentRequest(targetUserId)) throw new Error("既にフォローリクエストを送信済みです。");
 
-      // By-pass the broken 'send_follow_request' RPC and insert directly into the requests table.
-      // This ensures a 'pending' request is created, instead of an immediate follow.
       const { error: insertError } = await supabase.from('follow_relationships').insert({
         follower_id: currentUser.id,
         followed_id: targetUserId,
@@ -116,25 +101,9 @@ const UserSearch: React.FC<UserSearchProps> = ({ user: currentUser }) => {
       if (insertError) {
         throw insertError;
       }
-
-      // NOTE: The notification RPC call is temporarily commented out due to a database function mismatch.
-      // The RPC 'create_follow_request_notification' does not exist or has incorrect parameters.
-      // This prevents the follow request from failing and allows the core functionality to work.
-      /*
-      const { error: notificationError } = await supabase.rpc('create_follow_request_notification', {
-        p_user_id: targetUserId,
-        p_actor_id: currentUser.id
-      });
-
-      if (notificationError) {
-        // Log the error but don't block the user flow, as the main action (follow request) succeeded.
-        console.error("Failed to create follow request notification:", notificationError);
-      }
-      */
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sentFollowRequests'] });
-      // Also invalidate the notification count query to force a refetch
       queryClient.invalidateQueries({ queryKey: ['pendingRequestsCount'] });
       alert('フォローリクエストを送信しました！');
     },
@@ -144,11 +113,7 @@ const UserSearch: React.FC<UserSearchProps> = ({ user: currentUser }) => {
     },
   });
 
-  const handleFollowRequest = (targetUserId: string) => {
-    sendFollowRequestMutation.mutate(targetUserId);
-  };
-
-  const isGlobalLoading = isLoading || isLoadingFollowing || isLoadingReceivedRequests || isLoadingSentRequests || sendFollowRequestMutation.isPending;
+  const isGlobalLoading = isLoading || isLoadingFollowing || isLoadingSentRequests;
 
   return (
     <div className="p-4">
@@ -157,7 +122,7 @@ const UserSearch: React.FC<UserSearchProps> = ({ user: currentUser }) => {
         <input
           type="text"
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          onChange={handleSearchTermChange}
           placeholder="ユーザー名または表示名で検索"
           className="flex-grow p-2 border border-light-border dark:border-dark-border rounded-l-md bg-light-bg dark:bg-dark-bg text-light-text dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-light-primary"
           disabled={isGlobalLoading}
@@ -165,9 +130,9 @@ const UserSearch: React.FC<UserSearchProps> = ({ user: currentUser }) => {
         <button
           type="submit"
           className="bg-light-primary text-white p-2 rounded-r-md hover:bg-light-primary-hover dark:bg-dark-primary dark:text-slate-900 dark:hover:bg-dark-primary-hover disabled:opacity-50 disabled:cursor-not-allowed"
-          disabled={isGlobalLoading}
+          disabled={isGlobalLoading || !searchTerm.trim()}
         >
-          {isGlobalLoading ? <LoadingSpinner /> : <SearchIcon className="h-5 w-5" />}
+          {isLoading ? <LoadingSpinner /> : <SearchIcon className="h-5 w-5" />}
         </button>
       </form>
 
@@ -188,7 +153,7 @@ const UserSearch: React.FC<UserSearchProps> = ({ user: currentUser }) => {
                 </div>
                 {!isCurrentUser && (
                   <button
-                    onClick={() => handleFollowRequest(user.id)}
+                    onClick={() => sendFollowRequestMutation.mutate(user.id)}
                     className={`px-3 py-1 rounded-md text-sm ${alreadyFollowing || requestSent ? 'bg-slate-300 text-slate-600 dark:bg-slate-700 dark:text-slate-300 cursor-not-allowed' : 'bg-light-primary text-white hover:bg-light-primary-hover dark:bg-dark-primary dark:text-slate-900 dark:hover:bg-dark-primary-hover'}`}
                     disabled={alreadyFollowing || requestSent || sendFollowRequestMutation.isPending}
                   >
@@ -201,7 +166,7 @@ const UserSearch: React.FC<UserSearchProps> = ({ user: currentUser }) => {
         </div>
       )}
 
-      {!isGlobalLoading && searchResults.length === 0 && searchTerm.trim() && !error && (
+      {searchAttempted && !isLoading && searchResults.length === 0 && !error && (
         <p className="text-light-text-secondary dark:text-dark-text-secondary text-center">ユーザーが見つかりませんでした。</p>
       )}
     </div>

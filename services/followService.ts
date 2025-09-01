@@ -46,16 +46,39 @@ export const getFollowers = async (userId: string): Promise<Follower[]> => {
 };
 
 /**
- * [DEPRECATED - USES RPC] Fetches users a given user is following.
- * Kept for components that have not been migrated yet.
+ * Fetches users a given user is following by querying the table directly.
  */
 export const getFollowingUsers = async (userId: string): Promise<FollowingUser[]> => {
-  const { data, error } = await supabase.rpc('get_following_users', { p_user_id: userId });
-  if (error) {
-    console.error("getFollowingUsers: RPC error:", error);
-    throw new Error(`フォロー中のユーザーの取得に失敗しました: ${error.message}`);
+  const { data: relationships, error: relationshipError } = await supabase
+    .from('follow_relationships')
+    .select('followed_id')
+    .eq('follower_id', userId)
+    .eq('status', 'accepted');
+
+  if (relationshipError) {
+    console.error("Error fetching following relationships:", relationshipError);
+    throw new Error(`フォロー中のユーザーの取得に失敗しました: ${relationshipError.message}`);
   }
-  return data as FollowingUser[];
+  if (!relationships || relationships.length === 0) {
+    return [];
+  }
+
+  const followedIds = relationships.map(r => r.followed_id);
+  const { data: profiles, error: profileError } = await supabase
+    .from('user_profiles')
+    .select('id, username, display_name')
+    .in('id', followedIds);
+
+  if (profileError) {
+    console.error("Error fetching profiles for following users:", profileError);
+    throw new Error(`ユーザープロフィールの取得に失敗しました: ${profileError.message}`);
+  }
+
+  return profiles.map(p => ({
+    followed_user_id: p.id,
+    followed_username: p.username || '不明なユーザー',
+    followed_display_name: p.display_name || null,
+  }));
 };
 
 

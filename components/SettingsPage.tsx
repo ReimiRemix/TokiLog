@@ -3,8 +3,9 @@ import { supabase } from '../supabaseClient';
 import { User } from '@supabase/supabase-js';
 import SmallLoadingSpinner from './icons/SmallLoadingSpinner';
 import ConfirmationModal from './ConfirmationModal';
+import BlockedUsersList from './BlockedUsersList'; // Import the new component
 
-type SettingSection = 'profile' | 'account' | 'user-management' | 'danger-zone';
+type SettingSection = 'profile' | 'account' | 'user-management' | 'blocked-users' | 'danger-zone';
 
 const SettingsPage: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -302,6 +303,8 @@ const SettingsPage: React.FC = () => {
             </form>
           </div>
         ) : null;
+      case 'blocked-users':
+        return <BlockedUsersList />;
       case 'danger-zone':
         return (
           <div className="space-y-6">
@@ -351,6 +354,18 @@ const SettingsPage: React.FC = () => {
                 }`}
               >
                 アカウント
+              </button>
+            </li>
+            <li className="mb-2">
+              <button
+                onClick={() => setActiveSection('blocked-users')}
+                className={`w-full text-left px-4 py-2 rounded-md transition-colors duration-200 ${
+                  activeSection === 'blocked-users'
+                    ? 'bg-light-primary text-white dark:bg-dark-primary dark:text-slate-900'
+                    : 'hover:bg-light-hover dark:hover:bg-dark-hover'
+                }`}
+              >
+                ブロック中のユーザー
               </button>
             </li>
             {isSuperAdmin && (

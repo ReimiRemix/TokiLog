@@ -16,7 +16,6 @@ import ArrowUpIcon from './icons/ArrowUpIcon';
 import ArrowDownIcon from './icons/ArrowDownIcon';
 import BellIcon from './icons/BellIcon'; // Import BellIcon for pending requests
 import { useLocalStorage } from '../hooks/useLocalStorage';
-import FollowRequestList from './FollowRequestList';
 
 type MenuItem = {
   id: View | 'settings' | 'pendingRequests'; // Add 'pendingRequests' to View type for internal use
@@ -27,7 +26,7 @@ type MenuItem = {
 const defaultMenuItems: MenuItem[] = [
   { id: 'favorites', label: 'お気に入り', icon: StarIcon },
   { id: 'search', label: 'お店を探す', icon: SearchIcon },
-  { id: 'userSearch', label: 'ユーザーを探す', icon: SearchIcon },
+  { id: 'userSearch', label: 'ユーザーを探す', icon: UsersIcon },
   { id: 'followed', label: 'フォロー中', icon: UserIcon },
   { id: 'followers', label: 'フォロワー', icon: UsersIcon },
   { id: 'pendingRequests', label: '保留中リクエスト', icon: BellIcon }, // New menu item
@@ -66,14 +65,20 @@ const Sidebar: React.FC<SidebarProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [expanded, setExpanded] = useState<{ [key: string]: boolean }>({});
   const [orderedMenuItems, setOrderedMenuItems] = useLocalStorage<MenuItem[]>('sidebarMenuItems', defaultMenuItems);
-  const [isEditingMenu, setIsEditingMenu] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     // Validate orderedMenuItems from localStorage on mount
-    if (!Array.isArray(orderedMenuItems) || orderedMenuItems.length === 0 || orderedMenuItems.some(item => !item.id || !item.label || !item.icon)) {
+    if (!Array.isArray(orderedMenuItems) || orderedMenuItems.length === 0 || orderedMenuItems.some(item => !item.id || !item.label)) {
       console.warn("Invalid or empty sidebar menu items found in localStorage. Resetting to default.");
       setOrderedMenuItems(defaultMenuItems);
-      localStorage.removeItem('sidebarMenuItems');
     }
   }, [orderedMenuItems, setOrderedMenuItems]);
 
@@ -127,6 +132,8 @@ const Sidebar: React.FC<SidebarProps> = ({
         });
       });
       setExpanded(newExpanded);
+    } else {
+      setExpanded({});
     }
   }, [lowercasedQuery, filteredPrefectures, grouped]);
 
@@ -150,11 +157,11 @@ const Sidebar: React.FC<SidebarProps> = ({
       const newItems = [...prevItems];
       const itemToMove = newItems[index];
       if (direction === 'up') {
-        if (index === 0) return prevItems; // Already at the top
+        if (index === 0) return prevItems;
         newItems.splice(index, 1);
         newItems.splice(index - 1, 0, itemToMove);
       } else { // 'down'
-        if (index === newItems.length - 1) return prevItems; // Already at the bottom
+        if (index === newItems.length - 1) return prevItems;
         newItems.splice(index, 1);
         newItems.splice(index + 1, 0, itemToMove);
       }
@@ -162,18 +169,20 @@ const Sidebar: React.FC<SidebarProps> = ({
     });
   }, [setOrderedMenuItems]);
 
+  const showFullContent = !isCollapsed || (isOpen && isMobile);
+
   return (
     <aside
       className={twMerge(
         "fixed inset-y-0 left-0 z-50 h-full bg-light-card dark:bg-dark-card border-r border-light-border dark:border-dark-border p-4 flex flex-col",
         "transform transition-transform duration-300 ease-in-out",
-        isOpen ? "translate-x-0 w-80" : "-translate-x-full w-80", // Mobile: always full width when open
-        "md:fixed md:translate-x-0", // Desktop: always visible and fixed
-        isCollapsed ? "md:w-20" : "md:w-80" // Desktop: control width based on collapsed state
+        isOpen ? "translate-x-0 w-80" : "-translate-x-full w-80",
+        "md:fixed md:translate-x-0",
+        isCollapsed ? "md:w-20" : "md:w-80"
       )}
     >
       <div className="flex justify-between items-center mb-4">
-        {!isCollapsed && (
+        {showFullContent && (
           <h2 className="text-xl font-bold text-light-text dark:text-dark-text">Gourmet Log</h2>
         )}
         <button onClick={onClose} className="p-1 text-light-text-secondary dark:text-dark-text-secondary hover:text-light-text dark:hover:text-dark-text md:hidden" aria-label="メニューを閉じる">
@@ -181,7 +190,6 @@ const Sidebar: React.FC<SidebarProps> = ({
         </button>
       </div>
 
-      {/* Main Navigation Menu - Hide if it's a shared link */}
       {!isReadOnly && (
         <nav className="flex-1 overflow-y-auto -mr-2 pr-2 mb-4 border-b border-light-border dark:border-dark-border pb-4">
           <ul className="space-y-1">
@@ -200,38 +208,18 @@ const Sidebar: React.FC<SidebarProps> = ({
                   )}
                 >
                   {item.icon && <item.icon className="w-5 h-5" />}
-                  {(!isCollapsed || (isOpen && window.innerWidth < 768)) && <span>{item.label}</span>}
+                  {showFullContent && <span>{item.label}</span>}
                 </button>
-                {!isCollapsed && isEditingMenu && item.id !== 'settings' && ( // Don't allow reordering 'Settings'
-                  <div className="flex ml-2">
-                    <button
-                      onClick={() => moveMenuItem(index, 'up')}
-                      className="p-1 rounded-md hover:bg-slate-200 dark:hover:bg-slate-600/50"
-                      title="上に移動"
-                    >
-                      <ArrowUpIcon className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => moveMenuItem(index, 'down')}
-                      className="p-1 rounded-md hover:bg-slate-200 dark:hover:bg-slate-600/50"
-                      title="下に移動"
-                    >
-                      <ArrowDownIcon className="w-4 h-4" />
-                    </button>
-                  </div>
-                )}
               </li>
             ))}
           </ul>
         </nav>
       )}
 
-      {/* Location Filtering Section */}
       <div className="flex-1 overflow-y-auto -mr-2 pr-2">
-          {!isCollapsed && (
+          {showFullContent ? (
             <>
               <h3 className="text-lg font-semibold text-light-text dark:text-dark-text mb-3">エリアで絞り込み</h3>
-              {/* Search input remains hidden if isReadOnly is true */}
               {!isReadOnly && (
                 <div className="relative mb-4">
                   <input
@@ -284,7 +272,6 @@ const Sidebar: React.FC<SidebarProps> = ({
                           <ul className="pl-4 mt-1 space-y-1 border-l-2 border-light-border dark:border-dark-border ml-2">
                             {filteredCities.map(([city, cityRestaurants]) => {
                               const isCityActive = activeFilter.some(f => f.type === 'city' && f.value === city);
-
                               const filteredRestaurants = cityRestaurants.filter(r =>
                                   !lowercasedQuery ||
                                   prefecture.toLowerCase().includes(lowercasedQuery) ||
@@ -342,16 +329,14 @@ const Sidebar: React.FC<SidebarProps> = ({
                 </p>
               )}
             </>
-          )}
-          {isCollapsed && (
-            <div className="flex items-center justify-center h-full flex-col"> {/* Added flex-col for stacking */}
+          ) : (
+            <div className="flex items-center justify-center h-full flex-col">
               <MapPinIcon className="w-6 h-6 text-light-text-secondary dark:text-dark-text-secondary" />
-              {/* Always show text for area filter, even when collapsed, especially on mobile */}
               <span className="text-sm text-light-text-secondary dark:text-dark-text-secondary mt-1">エリアで絞り込み</span>
             </div>
           )}
         </div>
-      </aside>
+    </aside>
   );
 };
 

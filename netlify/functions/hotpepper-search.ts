@@ -1,7 +1,7 @@
 
 import type { Handler, HandlerEvent } from "@netlify/functions";
 import type { HotpepperRestaurant, SearchQuery } from "../../types";
-import { toKatakana } from "../../utils/textUtils";
+
 
 const handler: Handler = async (event: HandlerEvent) => {
   if (event.httpMethod !== 'POST') {
@@ -46,10 +46,8 @@ const handler: Handler = async (event: HandlerEvent) => {
       params.append('large_area', largeAreaCode);
     }
 
-    const storeNameProcessed = query.storeName ? toKatakana(query.storeName) : '';
-
     // For the keyword, use the more specific city and store name.
-    const keywordString = [query.city, storeNameProcessed]
+    const keywordString = [query.city, query.storeName]
       .filter(Boolean)
       .join(' ');
 

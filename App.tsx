@@ -122,13 +122,12 @@ const App: React.FC = () => {
 
   const touchStartX = useRef<number | null>(null);
   const SWIPE_THRESHOLD = 75; // pixels
-  const SWIPE_EDGE_WIDTH = 50; // pixels from the left edge
 
   const handleTouchStart = (e: React.TouchEvent) => {
     if (isSidebarOpen) return;
     const startX = e.touches[0].clientX;
-    // Only consider swipes starting from the left edge of the screen
-    if (startX < SWIPE_EDGE_WIDTH) {
+    // Only consider swipes starting from the left half of the screen
+    if (startX < window.innerWidth / 2) {
       touchStartX.current = startX;
     } else {
       touchStartX.current = null;
@@ -296,7 +295,12 @@ const App: React.FC = () => {
     retry: false,
   });
 
-  const restaurants = useMemo(() => isReadOnlyMode ? sharedRestaurants : myRestaurants, [isReadOnlyMode, sharedRestaurants, myRestaurants]);
+  const restaurants = useMemo(() => {
+    if (selectedFollowedUserId) {
+      return followedUserRestaurants;
+    }
+    return isReadOnlyMode ? sharedRestaurants : myRestaurants;
+  }, [selectedFollowedUserId, followedUserRestaurants, isReadOnlyMode, sharedRestaurants, myRestaurants]);
 
   // Define the new variable for RestaurantList's read-only state
   const isRestaurantListReadOnly = !!shareId;
@@ -503,10 +507,13 @@ const App: React.FC = () => {
       // If the user is logged out (session is null), reset all view-related states
       // to ensure a clean return to the login page.
       if (!session) {
-        setIsReadOnlyMode(false);
-        setShareId(null);
-        setCurrentViewedUserId(null);
-        sessionStorage.removeItem('shareId');
+        // On initial load for an anonymous user on a shared page, don't reset the share state.
+        if (!sessionStorage.getItem('shareId')) {
+          setIsReadOnlyMode(false);
+          setShareId(null);
+          setCurrentViewedUserId(null);
+          sessionStorage.removeItem('shareId');
+        }
       }
 
       // Only stop the auth loading indicator if not in a share session,
@@ -736,7 +743,7 @@ const App: React.FC = () => {
       {isReadOnlyMode && showReadOnlyBanner && !shareId && <ReadOnlyBanner isFiltered={!!lockedFilters} />}
       <div className={`flex h-screen ${isReadOnlyMode ? 'pt-10' : ''}`}>
         <Sidebar
-          restaurants={restaurants}
+          restaurants={displayedRestaurants}
           prefectureOrder={prefectureOrder}
           onFilterChange={setSidebarFilters}
           onScrollToRestaurant={handleScrollToRestaurant}
@@ -757,7 +764,11 @@ const App: React.FC = () => {
             />
         )}
         <main 
-          className={`flex-1 overflow-y-auto transition-all duration-300 ease-in-out`}
+          className={twMerge(
+            "flex-1 overflow-y-auto transition-all duration-300 ease-in-out",
+            "md:transition-[margin-left]", // Add transition for margin
+            isSidebarCollapsed ? "md:ml-20" : "md:ml-80"
+          )}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
         >
@@ -844,7 +855,7 @@ const App: React.FC = () => {
                           : '読み込み中...'}
                       </h2>
                       <RestaurantList
-                        restaurants={followedUserRestaurants}
+                        restaurants={displayedRestaurants}
                         onDeleteRestaurant={(id, name) => setRestaurantToDelete({id, name})}
                         onUpdateRestaurant={handleUpdateRestaurant}
                         onFixLocation={handleFixLocation}
@@ -1024,6 +1035,9 @@ const App: React.FC = () => {
                   setSelectedFollowedUserId(userId);
                   setView('followed'); // Switch to followed view to show their restaurants
                 }} />
+              )}
+              {view === 'pendingRequests' && !isReadOnlyMode && (
+                <PendingRequestsList />
               )}
               {view === 'settings' && !isReadOnlyMode && (
                 <SettingsPage />

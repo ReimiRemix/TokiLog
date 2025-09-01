@@ -4,7 +4,7 @@ import { supabase } from '../supabaseClient';
 import LoadingSpinner from './icons/LoadingSpinner';
 import CheckIcon from './icons/CheckIcon';
 import XIcon from './icons/XIcon';
-import { getPendingFollowRequests } from '../services/followService';
+import { getPendingFollowRequests, getSentFollowRequests, SentFollowRequest } from '../services/followService';
 import { User } from '@supabase/supabase-js';
 
 interface ReceivedFollowRequest {
@@ -12,14 +12,6 @@ interface ReceivedFollowRequest {
   follower_id: string;
   follower_username: string;
   follower_display_name: string | null;
-  created_at: string;
-}
-
-interface SentFollowRequest {
-  request_id: string;
-  addressee_id: string;
-  addressee_username: string;
-  addressee_display_name: string | null;
   created_at: string;
 }
 
@@ -41,20 +33,10 @@ const PendingRequestsList: React.FC = () => {
     enabled: !!currentUser, // This query will only run when currentUser is available
   });
 
-  // TODO: Fetch sent follow requests (requires a new RPC function in Supabase)
+  // Fetch sent follow requests
   const { data: sentRequests, isLoading: isLoadingSent, error: errorSent } = useQuery<SentFollowRequest[]>({
     queryKey: ['sentFollowRequests', currentUser?.id],
-    queryFn: async () => {
-      if (!currentUser) return [];
-      // Placeholder for fetching sent requests
-      // You would need a new RPC function like 'get_sent_follow_requests'
-      // const { data, error } = await supabase.rpc('get_sent_follow_requests');
-      // if (error) {
-      //   throw error;
-      // }
-      // return data || [];
-      return []; // Return empty for now
-    },
+    queryFn: getSentFollowRequests,
     enabled: !!currentUser,
   });
 
@@ -99,13 +81,12 @@ const PendingRequestsList: React.FC = () => {
 
   const cancelSentRequestMutation = useMutation({
     mutationFn: async (requestId: string) => {
-      // TODO: Implement RPC function for canceling sent follow request
-      // const { error } = await supabase.rpc('cancel_follow_request', { p_request_id: requestId });
-      // if (error) {
-      //   throw error;
-      // }
-      console.log('Canceling sent request:', requestId); // Placeholder
-      return Promise.resolve();
+      const { error } = await supabase
+        .from('follow_relationships')
+        .delete()
+        .eq('id', requestId);
+
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sentFollowRequests'] });
@@ -204,9 +185,9 @@ const PendingRequestsList: React.FC = () => {
                   <button
                     onClick={() => cancelSentRequestMutation.mutate(request.request_id)}
                     disabled={cancelSentRequestMutation.isPending}
-                    className="bg-red-500 text-white p-2 rounded-full hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed" 
+                    className="bg-red-500 text-white px-3 py-1.5 rounded-full hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5" 
                   >
-                    <XIcon className="w-5 h-5" /> キャンセル
+                    <XIcon className="w-4 h-4" /> キャンセル
                   </button>
                 </div>
               </div>
