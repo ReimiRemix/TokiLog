@@ -1,5 +1,4 @@
-
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { twMerge } from 'tailwind-merge';
 import type { Restaurant } from '../types';
 import MapPinIcon from './icons/MapPinIcon';
@@ -21,6 +20,8 @@ import MoveIcon from './icons/MoveIcon';
 
 interface RestaurantCardProps {
   restaurant: Restaurant;
+  myRestaurants?: Restaurant[];
+  onAddToFavorites?: (restaurant: Restaurant) => void;
   onDelete: (id: string, name: string) => void;
   onUpdate: (id: string, updatedData: Partial<Pick<Restaurant, 'visitCount' | 'userComment' | 'customUrl' | 'genres' | 'latitude' | 'longitude' | 'priceRange' | 'isClosed'>>) => void;
   onFixLocation: (restaurant: Restaurant) => void;
@@ -64,7 +65,18 @@ const getSafeHostname = (uri: string | undefined | null): string => {
 };
 
 
-const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant, onDelete, onUpdate, onFixLocation, isGeocoding, onOpenLocationEditor, isReadOnly, onRefetch }) => {
+const RestaurantCard: React.FC<RestaurantCardProps> = ({ 
+  restaurant, 
+  myRestaurants, 
+  onAddToFavorites, 
+  onDelete, 
+  onUpdate, 
+  onFixLocation, 
+  isGeocoding, 
+  onOpenLocationEditor, 
+  isReadOnly, 
+  onRefetch 
+}) => {
   const controlsDisabled = isReadOnly || !!restaurant.isClosed;
   const hasInvalidCoords = restaurant.latitude == null || restaurant.longitude == null || (restaurant.latitude === 0 && restaurant.longitude === 0);
   const mapUrl = hasInvalidCoords ? '#' : `https://www.google.com/maps/search/?api=1&query=${restaurant.latitude},${restaurant.longitude}`;
@@ -85,6 +97,11 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant, onDelete, o
   const [isEditingPrice, setIsEditingPrice] = useState(false);
   const [priceRange, setPriceRange] = useState(restaurant.priceRange || '');
   const priceInputRef = useRef<HTMLInputElement>(null);
+
+  const isAlreadyInFavorites = useMemo(() => {
+    if (!myRestaurants) return false;
+    return myRestaurants.some(r => r.name === restaurant.name && r.address === restaurant.address);
+  }, [myRestaurants, restaurant]);
 
 
   useEffect(() => {
@@ -204,6 +221,24 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({ restaurant, onDelete, o
             {restaurant.priceRange && <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary bg-slate-100 dark:bg-slate-700/50 inline-block px-2 py-1 rounded-md">{restaurant.priceRange}</p>}
           </div>
         </div>
+        {onAddToFavorites && (
+          <div className="ml-4">
+            {isAlreadyInFavorites ? (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300">
+                <CheckIcon className="w-4 h-4" />
+                追加済み
+              </span>
+            ) : (
+              <button 
+                onClick={() => onAddToFavorites(restaurant)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-full bg-light-primary text-white hover:bg-light-primary-hover dark:bg-dark-primary dark:text-slate-900 dark:hover:bg-dark-primary-hover transition-colors"
+              >
+                <PlusIcon className="w-4 h-4" />
+                お気に入りに追加
+              </button>
+            )}
+          </div>
+        )}
       </div>
       
       <div className="flex items-center justify-between">

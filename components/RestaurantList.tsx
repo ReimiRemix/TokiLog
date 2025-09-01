@@ -1,10 +1,11 @@
-
 import React from 'react';
 import type { Restaurant } from '../types';
 import RestaurantCard from './RestaurantCard';
 
 interface RestaurantListProps {
   restaurants: Restaurant[];
+  myRestaurants?: Restaurant[]; // Optional: needed for checking if a restaurant is already a favorite
+  onAddToFavorites?: (restaurant: Restaurant) => void; // Optional: for adding from a friend's list
   onDeleteRestaurant: (id: string, name: string) => void;
   onUpdateRestaurant: (id: string, updatedData: Partial<Pick<Restaurant, 'visitCount' | 'userComment' | 'customUrl' | 'genres' | 'priceRange' | 'isClosed'>>) => void;
   onFixLocation: (restaurant: Restaurant) => void;
@@ -14,7 +15,18 @@ interface RestaurantListProps {
   onRefetchRestaurant: (restaurant: Restaurant) => void;
 }
 
-const RestaurantList: React.FC<RestaurantListProps> = ({ restaurants, onDeleteRestaurant, onUpdateRestaurant, onFixLocation, geocodingAddress, onOpenLocationEditor, isReadOnly, onRefetchRestaurant }) => {
+const RestaurantList: React.FC<RestaurantListProps> = ({
+  restaurants,
+  myRestaurants,
+  onAddToFavorites,
+  onDeleteRestaurant,
+  onUpdateRestaurant,
+  onFixLocation,
+  geocodingAddress,
+  onOpenLocationEditor,
+  isReadOnly,
+  onRefetchRestaurant,
+}) => {
   if (restaurants.length === 0) {
     return (
       <div className="text-center py-16 px-6 bg-light-card dark:bg-dark-card rounded-ui-medium shadow-soft border border-light-border dark:border-dark-border">
@@ -30,6 +42,8 @@ const RestaurantList: React.FC<RestaurantListProps> = ({ restaurants, onDeleteRe
         <RestaurantCard
           key={restaurant.id}
           restaurant={restaurant}
+          myRestaurants={myRestaurants}
+          onAddToFavorites={onAddToFavorites}
           onDelete={onDeleteRestaurant}
           onUpdate={onUpdateRestaurant}
           onFixLocation={onFixLocation}

@@ -122,12 +122,13 @@ const App: React.FC = () => {
 
   const touchStartX = useRef<number | null>(null);
   const SWIPE_THRESHOLD = 75; // pixels
+  const SWIPE_EDGE_WIDTH = 50; // pixels from the left edge
 
   const handleTouchStart = (e: React.TouchEvent) => {
     if (isSidebarOpen) return;
     const startX = e.touches[0].clientX;
-    // Only consider swipes starting from the left half of the screen
-    if (startX < window.innerWidth / 2) {
+    // Only consider swipes starting from the left edge of the screen
+    if (startX < SWIPE_EDGE_WIDTH) {
       touchStartX.current = startX;
     } else {
       touchStartX.current = null;
@@ -360,7 +361,7 @@ const App: React.FC = () => {
   });
   
   const addRestaurantMutation = useMutation({
-    mutationFn: async (data: SearchResult | ManualAddFormData) => {
+    mutationFn: async (data: SearchResult | ManualAddFormData | Restaurant) => {
       if (!user) throw new Error("ユーザーがログインしていません。");
       
       let newRestaurantData: Pick<Restaurant, 'name' | 'address' | 'hours' | 'prefecture' | 'city' | 'website' | 'sources' | 'genres' | 'priceRange'> & { latitude: number | null, longitude: number | null };
@@ -374,7 +375,13 @@ const App: React.FC = () => {
           genres: 'genre' in data ? [data.genre] : [],
           priceRange: undefined, // Hotpepper data doesn't have priceRange
         };
-      } else {
+      } else if ('visitCount' in data) { // It's a Restaurant object
+        newRestaurantData = {
+            name: data.name, address: data.address, hours: data.hours, prefecture: data.prefecture,
+            city: data.city, website: data.website, sources: data.sources, genres: data.genres,
+            priceRange: data.priceRange, latitude: data.latitude, longitude: data.longitude,
+        };
+      } else { // It's ManualAddFormData
         newRestaurantData = { ...data, latitude: null, longitude: null, sources: [] };
       }
 
@@ -743,7 +750,7 @@ const App: React.FC = () => {
       {isReadOnlyMode && showReadOnlyBanner && !shareId && <ReadOnlyBanner isFiltered={!!lockedFilters} />}
       <div className={`flex h-screen ${isReadOnlyMode ? 'pt-10' : ''}`}>
         <Sidebar
-          restaurants={displayedRestaurants}
+          restaurants={isReadOnlyMode ? displayedRestaurants : restaurants}
           prefectureOrder={prefectureOrder}
           onFilterChange={setSidebarFilters}
           onScrollToRestaurant={handleScrollToRestaurant}
@@ -854,8 +861,99 @@ const App: React.FC = () => {
                           ? `${currentViewedUserProfile.display_name || currentViewedUserProfile.username}さんのお気に入り`
                           : '読み込み中...'}
                       </h2>
+                      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <button onClick={() => setIsFilterVisible(!isFilterVisible)} className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold rounded-md bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                          <FilterIcon /> フィルター <ChevronDownIcon className={`w-4 h-4 transition-transform ${isFilterVisible ? 'rotate-180' : ''}`} />
+                        </button>
+                      </div>
+                      {isFilterVisible && (
+                        <div className="p-4 bg-light-card dark:bg-dark-card rounded-ui-medium border border-light-border dark:border-dark-border grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-6 animate-slide-down">
+                          <div>
+                            <label htmlFor="genre-filter" className="block text-sm font-medium mb-2">ジャンル</label>
+                            <div className="flex flex-wrap gap-2">
+                              <button
+                                  onClick={() => setGenreFilters([])}
+                                  className={twMerge(
+                                      "px-3 py-1.5 text-sm font-semibold rounded-full transition-colors",
+                                      genreFilters.length === 0
+                                          ? "bg-light-primary text-white dark:bg-dark-primary dark:text-slate-900"
+                                          : "bg-slate-100 hover:bg-slate-200 dark:bg-slate-700/50 dark:hover:bg-slate-700"
+                                  )}
+                              >すべて</button>
+                              {allGenres.map(g => (
+                                  <button
+                                      key={g}
+                                      onClick={() => setGenreFilters(prev => prev.includes(g) ? prev.filter(f => f !== g) : [...prev, g])}
+                                      className={twMerge(
+                                          "px-3 py-1.5 text-sm font-semibold rounded-full transition-colors",
+                                          genreFilters.includes(g)
+                                              ? "bg-light-primary text-white dark:bg-dark-primary dark:text-slate-900"
+                                              : "bg-slate-100 hover:bg-slate-200 dark:bg-slate-700/50 dark:hover:bg-slate-700"
+                                      )}
+                                  >{g}</button>
+                              ))}
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-2">並び替え</label>
+                            <div className="flex flex-wrap items-center gap-2">
+                              {Object.entries(sortTypeLabels).map(([key, label]) => {
+                                const sortKey = key as SortType;
+                                const currentSort = sortConfig.find(s => s.by === sortKey);
+                                const isActive = !!currentSort;
+
+                                return (
+                                  <div
+                                    key={sortKey}
+                                    className={twMerge(
+                                      "flex items-center border rounded-full transition-colors",
+                                      isActive
+                                        ? "border-light-primary dark:border-dark-primary bg-light-primary-soft-bg dark:bg-dark-primary-soft-bg"
+                                        : "border-light-border dark:border-dark-border bg-slate-100 dark:bg-slate-700/50"
+                                    )}
+                                  >
+                                    <button
+                                      onClick={() => toggleSort(sortKey)}
+                                      className={twMerge(
+                                        "pl-3 pr-2 py-1 text-sm font-semibold",
+                                        isActive ? "text-light-primary dark:text-dark-primary" : ""
+                                      )}
+                                    >
+                                      {label}
+                                    </button>
+                                    {isActive && (
+                                      <div className="flex items-center border-l border-light-primary/50 dark:border-dark-primary/50">
+                                        <button
+                                          onClick={() => setSortOrder(sortKey, 'asc')}
+                                          className={twMerge(
+                                            "p-1.5",
+                                            currentSort.order === 'asc' ? "text-light-primary dark:text-dark-primary" : "text-light-text-secondary dark:text-dark-text-secondary"
+                                          )}
+                                        >
+                                          <ArrowUpIcon className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                          onClick={() => setSortOrder(sortKey, 'desc')}
+                                          className={twMerge(
+                                            "p-1.5",
+                                            currentSort.order === 'desc' ? "text-light-primary dark:text-dark-primary" : "text-light-text-secondary dark:text-dark-text-secondary"
+                                          )}
+                                        >
+                                          <ArrowDownIcon className="w-4 h-4" />
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      )}
                       <RestaurantList
                         restaurants={displayedRestaurants}
+                        myRestaurants={myRestaurants}
+                        onAddToFavorites={addRestaurantMutation.mutate}
                         onDeleteRestaurant={(id, name) => setRestaurantToDelete({id, name})}
                         onUpdateRestaurant={handleUpdateRestaurant}
                         onFixLocation={handleFixLocation}

@@ -9,7 +9,7 @@ import RefreshPageIcon from './icons/RefreshPageIcon';
 import LogOutIcon from './icons/LogOutIcon';
 import ThemeToggle from './ThemeToggle';
 import { twMerge } from 'tailwind-merge';
-// import FollowRequestList from './FollowRequestList'; // Removed from here
+import ConfirmationModal from './ConfirmationModal';
 
 interface HeaderActionsMenuProps {
   user: User;
@@ -22,6 +22,7 @@ interface HeaderActionsMenuProps {
 const HeaderActionsMenu: React.FC<HeaderActionsMenuProps> = ({ user, onScrollToRestaurant, theme, setTheme, onLogout }) => {
     const queryClient = useQueryClient();
     const [isOpen, setIsOpen] = useState(false);
+    const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
     const { data: notifications = [] } = useQuery({
@@ -36,8 +37,7 @@ const HeaderActionsMenu: React.FC<HeaderActionsMenuProps> = ({ user, onScrollToR
             if (error) throw new Error(error.message);
             return data as Notification[];
         },
-        enabled: false, // Supabase側の問題が解決するまで一時的に無効化
-        refetchInterval: 15000,
+        refetchInterval: 5000,
     });
 
     useEffect(() => {
@@ -78,6 +78,24 @@ const HeaderActionsMenu: React.FC<HeaderActionsMenuProps> = ({ user, onScrollToR
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['notifications', user.id] });
+        },
+    });
+
+    const clearAllNotificationsMutation = useMutation({
+        mutationFn: async () => {
+            const { error } = await supabase
+                .from('notifications')
+                .delete()
+                .eq('user_id', user.id);
+            if (error) throw new Error(error.message);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['notifications', user.id] });
+            setIsClearConfirmOpen(false);
+            setIsOpen(false); // Close dropdown after clearing
+        },
+        onError: (error) => {
+            alert(`通知のクリアに失敗しました: ${error.message}`);
         },
     });
 
@@ -125,11 +143,15 @@ const HeaderActionsMenu: React.FC<HeaderActionsMenuProps> = ({ user, onScrollToR
                             ))}
                            </div>
                         )}
-                        {unreadCount > 0 && (
+                        {notifications.length > 0 && unreadCount > 0 && (
                             <button onClick={() => markAllAsReadMutation.mutate()} disabled={markAllAsReadMutation.isPending} className="w-full text-center mt-2 text-xs font-semibold text-light-primary dark:text-dark-primary hover:opacity-80 transition-opacity disabled:opacity-50">すべて既読にする</button>
                         )}
+                        {notifications.length > 0 && (
+                            <button onClick={() => setIsClearConfirmOpen(true)} disabled={clearAllNotificationsMutation.isPending} className="w-full text-center mt-2 text-xs font-semibold text-red-500 hover:text-red-700 transition-colors disabled:opacity-50">
+                                すべてクリア
+                            </button>
+                        )}
                     </div>
-                    {/* Removed FollowRequestList from here */}
                     <div className="p-2 border-b border-light-border dark:border-dark-border">
                         <ThemeToggle theme={theme} setTheme={setTheme} />
                     </div>
@@ -144,6 +166,18 @@ const HeaderActionsMenu: React.FC<HeaderActionsMenuProps> = ({ user, onScrollToR
                         </button>
                     </div>
                 </div>
+            )}
+            {isClearConfirmOpen && (
+                <ConfirmationModal
+                    isOpen={isClearConfirmOpen}
+                    onClose={() => setIsClearConfirmOpen(false)}
+                    onConfirm={() => clearAllNotificationsMutation.mutate()}
+                    title="通知をすべてクリア"
+                    confirmText="クリア"
+                    isDestructive
+                >
+                    <p>すべての通知を本当にクリアしますか？この操作は元に戻せません。</p>
+                </ConfirmationModal>
             )}
         </div>
     );

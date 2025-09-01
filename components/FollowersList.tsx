@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../supabaseClient';
 import LoadingSpinner from './icons/LoadingSpinner';
 import { Session } from '@supabase/supabase-js';
-import { getFollowers, Follower, getFollowingUsers, FollowingUser } from '../services/followService';
+import { getFollowers, Follower, getFollowingUsers, FollowingUser, getSentFollowRequests, SentFollowRequest } from '../services/followService';
 import { blockUser } from '../services/blockService';
 import ConfirmationModal from './ConfirmationModal';
 
@@ -29,7 +29,7 @@ const FollowersList: React.FC<FollowersListProps> = ({ onSelectUser }) => {
     queryFn: async ({ queryKey }) => {
       const [, userId] = queryKey;
       if (!userId) throw new Error("User not authenticated.");
-      return getFollowers(userId);
+      return getFollowers(userId as string);
     },
     enabled: !!session?.user,
   });
@@ -39,8 +39,14 @@ const FollowersList: React.FC<FollowersListProps> = ({ onSelectUser }) => {
     queryFn: async ({ queryKey }) => {
       const [, userId] = queryKey;
       if (!userId) throw new Error("User not authenticated.");
-      return getFollowingUsers(userId);
+      return getFollowingUsers(userId as string);
     },
+    enabled: !!session?.user,
+  });
+
+  const { data: sentRequests, isLoading: isLoadingSentRequests } = useQuery<SentFollowRequest[]>({
+    queryKey: ['sentFollowRequests', session?.user?.id],
+    queryFn: getSentFollowRequests,
     enabled: !!session?.user,
   });
 
@@ -57,22 +63,22 @@ const FollowersList: React.FC<FollowersListProps> = ({ onSelectUser }) => {
     },
   });
 
-  const followBackMutation = useMutation({
+  const sendFollowRequestMutation = useMutation({
     mutationFn: async (targetUserId: string) => {
         if (!session?.user) throw new Error("User not authenticated.");
         const { error } = await supabase.from('follow_relationships').insert({
             follower_id: session.user.id,
             followed_id: targetUserId,
-            status: 'accepted'
+            status: 'pending'
         });
         if (error) throw error;
     },
     onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['following'] });
-        alert('フォローバックしました！');
+        queryClient.invalidateQueries({ queryKey: ['sentFollowRequests'] });
+        alert('フォローリクエストを送信しました！');
     },
     onError: (error) => {
-        alert(`フォローバックに失敗しました: ${error.message}`);
+        alert(`フォローリクエストの送信に失敗しました: ${error.message}`);
     }
   });
 
@@ -81,13 +87,21 @@ const FollowersList: React.FC<FollowersListProps> = ({ onSelectUser }) => {
     return new Set(following.map(u => u.followed_user_id));
   }, [following]);
 
+  const sentRequestIds = useMemo(() => {
+    if (!sentRequests) return new Set<string>();
+    return new Set(sentRequests.map(r => r.addressee_id));
+  }, [sentRequests]);
+
   const handleConfirmBlock = () => {
     if (userToBlock) {
       blockMutation.mutate(userToBlock.follower_id);
     }
   };
 
-  if (isLoadingFollowers || isLoadingFollowing) {
+  const isLoading = isLoadingFollowers || isLoadingFollowing || isLoadingSentRequests;
+  const error = errorFollowers || errorFollowing;
+
+  if (isLoading) {
     return (
       <div className="flex justify-center items-center p-4">
         <LoadingSpinner />
@@ -96,7 +110,6 @@ const FollowersList: React.FC<FollowersListProps> = ({ onSelectUser }) => {
     );
   }
 
-  const error = errorFollowers || errorFollowing;
   if (error) {
     return <div className="text-red-500 p-4">エラー: {error.message}</div>;
   }
@@ -112,6 +125,8 @@ const FollowersList: React.FC<FollowersListProps> = ({ onSelectUser }) => {
         <div className="space-y-3">
           {followers.map((follower) => {
             const isMutual = followingIds.has(follower.follower_id);
+            const hasSentRequest = sentRequestIds.has(follower.follower_id);
+
             return (
               <div
                 key={follower.follower_id}
@@ -136,11 +151,11 @@ const FollowersList: React.FC<FollowersListProps> = ({ onSelectUser }) => {
                     </span>
                   ) : (
                     <button 
-                        onClick={() => followBackMutation.mutate(follower.follower_id)}
-                        disabled={followBackMutation.isPending}
-                        className="text-xs font-semibold px-3 py-1.5 rounded-full bg-light-primary text-white hover:bg-light-primary-hover dark:bg-dark-primary dark:text-slate-900 dark:hover:bg-dark-primary-hover transition-colors disabled:opacity-50"
+                        onClick={() => sendFollowRequestMutation.mutate(follower.follower_id)}
+                        disabled={sendFollowRequestMutation.isPending || hasSentRequest}
+                        className="text-xs font-semibold px-3 py-1.5 rounded-full bg-light-primary text-white hover:bg-light-primary-hover dark:bg-dark-primary dark:text-slate-900 dark:hover:bg-dark-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        フォローバック
+                        {hasSentRequest ? 'リクエスト済み' : 'フォローバック'}
                     </button>
                   )}
                   <button 

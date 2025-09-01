@@ -31,6 +31,7 @@ const PendingRequestsList: React.FC = () => {
     queryKey: ['receivedFollowRequests', currentUser?.id],
     queryFn: getPendingFollowRequests, // Use the imported service function
     enabled: !!currentUser, // This query will only run when currentUser is available
+    refetchOnMount: 'always',
   });
 
   // Fetch sent follow requests
@@ -38,6 +39,7 @@ const PendingRequestsList: React.FC = () => {
     queryKey: ['sentFollowRequests', currentUser?.id],
     queryFn: getSentFollowRequests,
     enabled: !!currentUser,
+    refetchOnMount: 'always',
   });
 
   const acceptMutation = useMutation({
