@@ -85,6 +85,7 @@ const sortTypeLabels: { [key in SortType]: string } = {
 const App: React.FC = () => {
   const queryClient = useQueryClient();
   const [user, setUser] = useState<User | null>(null);
+  console.log('App.tsx - user object:', user);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [followersCount, setFollowersCount] = useState<number>(0);
   const [followingCount, setFollowingCount] = useState<number>(0);
@@ -207,7 +208,7 @@ const App: React.FC = () => {
       enabled: !isReadOnlyMode && !!user && !selectedFollowedUserId, // Only fetch if not in read-only mode and user is logged in and no followed user is selected
   });
 
-  const { data: fetchedUserProfile } = useQuery({
+  const { data: fetchedUserProfile, error: fetchedUserProfileError } = useQuery({
     queryKey: ['userProfile', user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
@@ -227,6 +228,10 @@ const App: React.FC = () => {
       if (data) {
         setUserProfile(data as UserProfile);
       }
+      console.log('App.tsx - fetchedUserProfile data:', data);
+    },
+    onError: (error) => {
+      console.error('App.tsx - fetchedUserProfile error:', error);
     },
   });
 
