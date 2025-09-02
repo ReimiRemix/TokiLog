@@ -208,32 +208,61 @@ const App: React.FC = () => {
       enabled: !isReadOnlyMode && !!user && !selectedFollowedUserId, // Only fetch if not in read-only mode and user is logged in and no followed user is selected
   });
 
-  const { data: fetchedUserProfile, error: fetchedUserProfileError } = useQuery({
-    queryKey: ['userProfile', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return null;
+    // const { data: fetchedUserProfile, error: fetchedUserProfileError } = useQuery({
+  //   queryKey: ['userProfile', user?.id],
+  //   queryFn: async () => {
+  //     if (!user?.id) return null;
+  //     const { data, error } = await supabase
+  //       .from('user_profiles')
+  //       .select('username, display_name, is_super_admin')
+  //       .eq('id', user.id)
+  //       .single();
+  //     if (error) {
+  //       console.error('Error fetching user profile:', error);
+  //       return null;
+  //     }
+  //     return data;
+  //   },
+  //   enabled: !!user?.id,
+  //   onSuccess: (data) => {
+  //     if (data) {
+  //       setUserProfile(data as UserProfile);
+  //     }
+  //     console.log('App.tsx - fetchedUserProfile data:', data);
+  //   },
+  //   onError: (error) => {
+  //     console.error('App.tsx - fetchedUserProfile error:', error);
+  //   },
+  // });
+
+  useEffect(() => {
+    const fetchUserProfileDirectly = async () => {
+      if (!user?.id) {
+        setUserProfile(null);
+        console.log('App.tsx - Direct fetch: user ID is null.');
+        return;
+      }
+      console.log('App.tsx - Direct fetch: Attempting to fetch user profile for ID:', user.id);
       const { data, error } = await supabase
         .from('user_profiles')
         .select('username, display_name, is_super_admin')
         .eq('id', user.id)
         .single();
+
       if (error) {
-        console.error('Error fetching user profile:', error);
-        return null;
-      }
-      return data;
-    },
-    enabled: !!user?.id,
-    onSuccess: (data) => {
-      if (data) {
+        console.error('App.tsx - Direct fetch error:', error);
+        setUserProfile(null);
+      } else if (data) {
+        console.log('App.tsx - Direct fetch data:', data);
         setUserProfile(data as UserProfile);
+      } else {
+        console.log('App.tsx - Direct fetch: No data returned for user profile.');
+        setUserProfile(null);
       }
-      console.log('App.tsx - fetchedUserProfile data:', data);
-    },
-    onError: (error) => {
-      console.error('App.tsx - fetchedUserProfile error:', error);
-    },
-  });
+    };
+
+    fetchUserProfileDirectly();
+  }, [user]);
 
   useQuery({
     queryKey: ['followCounts', user?.id],
@@ -592,6 +621,11 @@ const App: React.FC = () => {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+
+      // If user is logged in, invalidate userProfile query to ensure it fetches
+      if (session?.user) {
+        queryClient.invalidateQueries({ queryKey: ['userProfile', session.user.id] });
+      }
 
       // If the user is logged out (session is null), reset all view-related states
       // to ensure a clean return to the login page.

@@ -110,12 +110,14 @@ const RestaurantInput: React.FC<RestaurantInputProps> = ({ onSearch, isLoading }
 
     if (prefectureName) {
       const largeAreaCode = largeAreaMapping[prefectureName];
+      console.log('RestaurantInput.tsx - largeAreaCode:', largeAreaCode);
       if (largeAreaCode) {
         setIsAreaLoading(true);
         try {
           const response = await fetch(`/.netlify/functions/hotpepper-area-search?large_area_code=${largeAreaCode}`);
           if (response.ok) {
             const data = await response.json();
+            console.log('RestaurantInput.tsx - fetched middleAreas data:', data);
             setMiddleAreas(data);
           }
         } catch (error) {
