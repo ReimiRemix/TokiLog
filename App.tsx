@@ -213,7 +213,7 @@ const App: React.FC = () => {
       if (!user?.id) return null;
       const { data, error } = await supabase
         .from('user_profiles')
-        .select('username, display_name, avatar_url, is_super_admin')
+        .select('username, display_name, is_super_admin')
         .eq('id', user.id)
         .single();
       if (error) {
@@ -226,6 +226,7 @@ const App: React.FC = () => {
     onSuccess: (data) => {
       if (data) {
         setUserProfile(data as UserProfile);
+        console.log('App.tsx - userProfile.is_super_admin after fetch:', data.is_super_admin);
       }
     },
   });

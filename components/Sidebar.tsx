@@ -73,6 +73,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   followingCount,
   isSuperAdmin,
 }) => {
+  console.log('Sidebar.tsx - isSuperAdmin prop:', isSuperAdmin);
   const [searchQuery, setSearchQuery] = useState('');
   const [expanded, setExpanded] = useState<{ [key: string]: boolean }>({});
 
@@ -102,17 +103,30 @@ const Sidebar: React.FC<SidebarProps> = ({
       const hasUserManagement = newItems.some(item => item.id === 'admin_user_management');
       const hasMonitoring = newItems.some(item => item.id === 'monitoring');
 
+      let changed = false; // Flag to track if changes occurred
+
       if (isSuperAdmin) {
         if (!hasUserManagement) {
           newItems.push({ id: 'admin_user_management', label: 'ユーザー管理', icon: UsersIcon });
+          changed = true;
         }
         if (!hasMonitoring) {
           newItems.push({ id: 'monitoring', label: '監視', icon: ActivityIcon });
+          changed = true;
         }
       } else {
-        newItems = newItems.filter(item => item.id !== 'admin_user_management' && item.id !== 'monitoring');
+        const filteredItems = newItems.filter(item => item.id !== 'admin_user_management' && item.id !== 'monitoring');
+        if (filteredItems.length !== newItems.length) { // Check if any items were filtered out
+          newItems = filteredItems;
+          changed = true;
+        }
       }
-      return newItems;
+
+      // Only update state if changes actually occurred
+      if (changed) {
+        return newItems;
+      }
+      return prevItems; // Return previous state if no changes
     });
   }, [isSuperAdmin, setOrderedMenuItems]);
 
