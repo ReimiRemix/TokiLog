@@ -226,9 +226,13 @@ const App: React.FC = () => {
     onSuccess: (data) => {
       if (data) {
         setUserProfile(data as UserProfile);
-        console.log('App.tsx - userProfile.is_super_admin after fetch:', data.is_super_admin);
       }
     },
+  useEffect(() => {
+    if (userProfile) {
+      console.log('App.tsx - userProfile.is_super_admin in useEffect:', userProfile.is_super_admin);
+    }
+  }, [userProfile]);
   });
 
   useQuery({
