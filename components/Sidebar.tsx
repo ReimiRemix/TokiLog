@@ -30,8 +30,7 @@ const defaultMenuItems: MenuItem[] = [
   { id: 'favorites', label: 'お気に入り', icon: StarIcon },
   { id: 'search', label: 'お店を探す', icon: SearchIcon },
   { id: 'userSearch', label: 'ユーザーを探す', icon: UsersIcon },
-  { id: 'followed', label: 'フォロー中', icon: UserIcon },
-  { id: 'followers', label: 'フォロワー', icon: UsersIcon },
+  
   { id: 'pendingRequests', label: '保留中リクエスト', icon: BellIcon }, // New menu item
   { id: 'map', label: 'マップ', icon: MapIcon },
   { id: 'analysis', label: 'AIに相談', icon: SparklesIcon },
@@ -246,14 +245,26 @@ const Sidebar: React.FC<SidebarProps> = ({
           <p className="font-semibold text-light-text dark:text-dark-text">{userProfile.display_name || userProfile.username}</p>
           <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">@{userProfile.username}</p>
           <div className="flex justify-around mt-2 text-sm">
-            <div className="text-center">
-              <p className="font-bold">{followingCount}</p>
-              <p className="text-light-text-secondary dark:text-dark-text-secondary">フォロー中</p>
-            </div>
-            <div className="text-center">
-              <p className="font-bold">{followersCount}</p>
-              <p className="text-light-text-secondary dark:text-dark-text-secondary">フォロワー</p>
-            </div>
+            <button
+              onClick={() => {
+                onSelectMenuItem('followed');
+                onClose();
+              }}
+              className="text-center p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors flex-1"
+            >
+              <p className="font-bold text-light-text dark:text-dark-text">{followingCount}</p>
+              <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">フォロー中</p>
+            </button>
+            <button
+              onClick={() => {
+                onSelectMenuItem('followers');
+                onClose();
+              }}
+              className="text-center p-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors flex-1"
+            >
+              <p className="font-bold text-light-text dark:text-dark-text">{followersCount}</p>
+              <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">フォロワー</p>
+            </button>
           </div>
         </div>
       )}
