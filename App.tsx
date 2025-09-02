@@ -621,6 +621,7 @@ const App: React.FC = () => {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      console.log('Current authenticated user ID:', session?.user?.id); // TEMPORARY LOG
 
       // If user is logged in, invalidate userProfile query to ensure it fetches
       if (session?.user) {
