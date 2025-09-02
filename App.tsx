@@ -235,6 +235,32 @@ const App: React.FC = () => {
   //   },
   // });
 
+  //   queryKey: ['userProfile', user?.id],
+  //   queryFn: async () => {
+  //     if (!user?.id) return null;
+  //     const { data, error } = await supabase
+  //       .from('user_profiles')
+  //       .select('username, display_name, is_super_admin')
+  //       .eq('id', user.id)
+  //       .single();
+  //     if (error) {
+  //       console.error('Error fetching user profile:', error);
+  //       return null;
+  //     }
+  //     return data;
+  //   },
+  //   enabled: !!user?.id,
+  //   onSuccess: (data) => {
+  //     if (data) {
+  //       setUserProfile(data as UserProfile);
+  //     }
+  //     console.log('App.tsx - fetchedUserProfile data:', data);
+  //   },
+  //   onError: (error) => {
+  //     console.error('App.tsx - fetchedUserProfile error:', error);
+  //   },
+  // });
+
   useEffect(() => {
     const fetchUserProfileDirectly = async () => {
       if (!user?.id) {
@@ -267,17 +293,30 @@ const App: React.FC = () => {
   useQuery({
     queryKey: ['followCounts', user?.id],
     queryFn: async () => {
+      console.log('[followCounts QueryFn] Executing for user:', user?.id);
       if (!user?.id) return { followers: 0, following: 0 };
-      const [followers, following] = await Promise.all([
-        getFollowersCount(user.id),
-        getFollowingCount(user.id),
-      ]);
-      return { followers, following };
+
+      const followers = await getFollowersCount(user.id);
+      const following = await getFollowingCount(user.id);
+
+      // Re-add DEBUGGING ONLY: Directly set state here
+      setFollowersCount(followers);
+      setFollowingCount(following);
+      console.log('DEBUG: Directly set followersCount to', followers, 'and followingCount to', following);
+
+      return { followers, following }; // Still return for React Query's internal state
     },
     enabled: !!user?.id,
+    refetchOnMount: true, // Keep this for now to ensure re-fetch
     onSuccess: (data) => {
-      setFollowersCount(data.followers);
-      setFollowingCount(data.following);
+      console.log('Follow counts fetched (onSuccess):', data);
+      // setFollowersCount(data.followers); // Keep commented out
+      // setFollowingCount(data.following); // Keep commented out
+    },
+    onError: (error) => {
+      console.error('Error fetching follow counts (from onError):', error);
+      setFollowersCount(0);
+      setFollowingCount(0);
     },
   });
 
