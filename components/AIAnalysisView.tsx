@@ -89,6 +89,17 @@ const AIAnalysisView: React.FC<AIAnalysisViewProps> = ({ restaurants, user, onSc
 
   const recommendationMutation = useMutation({
     mutationFn: async ({ userQuery, restaurantList, history }: { userQuery: string; restaurantList: Restaurant[], history: ChatMessage[] }) => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        fetch('/.netlify/functions/log-api-usage', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ api_type: 'gemini-recommend' }),
+        });
+      }
       const response = await fetch('/.netlify/functions/gemini-recommend', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

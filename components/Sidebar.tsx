@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { twMerge } from 'tailwind-merge';
-import type { Restaurant, SidebarFilter, View } from '../types'; // Import View from types.ts
+import type { Restaurant, SidebarFilter, View, UserProfile } from '../types'; // Import View from types.ts
 import ChevronDownIcon from './icons/ChevronDownIcon';
 import XIcon from './icons/XIcon';
 import SearchIcon from './icons/SearchIcon';
@@ -15,6 +15,9 @@ import SettingsIcon from './icons/SettingsIcon';
 import ArrowUpIcon from './icons/ArrowUpIcon';
 import ArrowDownIcon from './icons/ArrowDownIcon';
 import BellIcon from './icons/BellIcon'; // Import BellIcon for pending requests
+import LockIcon from './icons/LockIcon';
+import CustomLogIcon from './icons/CustomLogIcon';
+import ActivityIcon from './icons/ActivityIcon';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 
 type MenuItem = {
@@ -47,6 +50,10 @@ interface SidebarProps {
   isReadOnly: boolean;
   onSelectMenuItem: (viewId: View | 'pendingRequests') => void; // Update type here
   currentView: View;
+  userProfile: UserProfile | null;
+  followersCount: number;
+  followingCount: number;
+  isSuperAdmin: boolean;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -61,10 +68,24 @@ const Sidebar: React.FC<SidebarProps> = ({
   isReadOnly,
   onSelectMenuItem,
   currentView,
+  userProfile,
+  followersCount,
+  followingCount,
+  isSuperAdmin,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [expanded, setExpanded] = useState<{ [key: string]: boolean }>({});
-  const [orderedMenuItems, setOrderedMenuItems] = useLocalStorage<MenuItem[]>('sidebarMenuItems', defaultMenuItems);
+
+  const menuItems = useMemo(() => {
+    const items = [...defaultMenuItems];
+    if (isSuperAdmin) {
+      items.push({ id: 'admin_user_management', label: 'ユーザー管理', icon: UsersIcon });
+      items.push({ id: 'monitoring', label: '監視', icon: ActivityIcon });
+    }
+    return items;
+  }, [isSuperAdmin]);
+
+  const [orderedMenuItems, setOrderedMenuItems] = useLocalStorage<MenuItem[]>('sidebarMenuItems', menuItems);
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
@@ -75,12 +96,25 @@ const Sidebar: React.FC<SidebarProps> = ({
   }, []);
 
   useEffect(() => {
-    // Validate orderedMenuItems from localStorage on mount
-    if (!Array.isArray(orderedMenuItems) || orderedMenuItems.length === 0 || orderedMenuItems.some(item => !item.id || !item.label)) {
-      console.warn("Invalid or empty sidebar menu items found in localStorage. Resetting to default.");
-      setOrderedMenuItems(defaultMenuItems);
-    }
-  }, [orderedMenuItems, setOrderedMenuItems]);
+    // Synchronize menu items with admin status
+    setOrderedMenuItems(prevItems => {
+      let newItems = [...prevItems];
+      const hasUserManagement = newItems.some(item => item.id === 'admin_user_management');
+      const hasMonitoring = newItems.some(item => item.id === 'monitoring');
+
+      if (isSuperAdmin) {
+        if (!hasUserManagement) {
+          newItems.push({ id: 'admin_user_management', label: 'ユーザー管理', icon: UsersIcon });
+        }
+        if (!hasMonitoring) {
+          newItems.push({ id: 'monitoring', label: '監視', icon: ActivityIcon });
+        }
+      } else {
+        newItems = newItems.filter(item => item.id !== 'admin_user_management' && item.id !== 'monitoring');
+      }
+      return newItems;
+    });
+  }, [isSuperAdmin, setOrderedMenuItems]);
 
   const grouped = useMemo(() => {
     return restaurants.reduce<Record<string, Record<string, Restaurant[]>>>((acc, restaurant) => {
@@ -183,12 +217,32 @@ const Sidebar: React.FC<SidebarProps> = ({
     >
       <div className="flex justify-between items-center mb-4">
         {showFullContent && (
-          <h2 className="text-xl font-bold text-light-text dark:text-dark-text">Gourmet Log</h2>
+          <div className="flex items-center gap-2">
+            <CustomLogIcon className="w-8 h-8 text-light-primary dark:text-dark-primary" />
+            <h2 className="text-xl font-bold text-light-text dark:text-dark-text">Gourmet Log</h2>
+          </div>
         )}
         <button onClick={onClose} className="p-1 text-light-text-secondary dark:text-dark-text-secondary hover:text-light-text dark:hover:text-dark-text md:hidden" aria-label="メニューを閉じる">
           <XIcon className="w-6 h-6" />
         </button>
       </div>
+
+      {showFullContent && userProfile && (
+        <div className="mb-4 p-3 bg-light-bg dark:bg-dark-bg rounded-lg border border-light-border dark:border-dark-border">
+          <p className="font-semibold text-light-text dark:text-dark-text">{userProfile.display_name || userProfile.username}</p>
+          <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">@{userProfile.username}</p>
+          <div className="flex justify-around mt-2 text-sm">
+            <div className="text-center">
+              <p className="font-bold">{followingCount}</p>
+              <p className="text-light-text-secondary dark:text-dark-text-secondary">フォロー中</p>
+            </div>
+            <div className="text-center">
+              <p className="font-bold">{followersCount}</p>
+              <p className="text-light-text-secondary dark:text-dark-text-secondary">フォロワー</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {!isReadOnly && (
         <nav className="flex-1 overflow-y-auto -mr-2 pr-2 mb-4 border-b border-light-border dark:border-dark-border pb-4">

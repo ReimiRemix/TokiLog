@@ -45,6 +45,12 @@ import UsersIcon from './components/icons/UsersIcon';
 import MapIcon from './components/icons/MapIcon';
 import SettingsPage from './components/SettingsPage';
 import PendingRequestsList from './components/PendingRequestsList';
+import BottomTabBar from './components/BottomTabBar';
+import AdminPage from './components/AdminPage';
+import MonitoringView from './components/MonitoringView';
+
+
+import { getFollowersCount, getFollowingCount } from './services/followService';
 
 
 export type Theme = 'light' | 'dark';
@@ -79,6 +85,9 @@ const sortTypeLabels: { [key in SortType]: string } = {
 const App: React.FC = () => {
   const queryClient = useQueryClient();
   const [user, setUser] = useState<User | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [followersCount, setFollowersCount] = useState<number>(0);
+  const [followingCount, setFollowingCount] = useState<number>(0);
   const [currentViewedUserId, setCurrentViewedUserId] = useState<string | null>(null); // For shared links
   const [selectedFollowedUserId, setSelectedFollowedUserId] = useState<string | null>(null); // For selected followed user's restaurants
   const [authLoading, setAuthLoading] = useState(true);
@@ -198,6 +207,46 @@ const App: React.FC = () => {
       enabled: !isReadOnlyMode && !!user && !selectedFollowedUserId, // Only fetch if not in read-only mode and user is logged in and no followed user is selected
   });
 
+  const { data: fetchedUserProfile } = useQuery({
+    queryKey: ['userProfile', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      const { data, error } = await supabase
+        .from('user_profiles')
+        .select('username, display_name, avatar_url, is_super_admin')
+        .eq('id', user.id)
+        .single();
+      if (error) {
+        console.error('Error fetching user profile:', error);
+        return null;
+      }
+      return data;
+    },
+    enabled: !!user?.id,
+    onSuccess: (data) => {
+      if (data) {
+        setUserProfile(data as UserProfile);
+      }
+    },
+  });
+
+  useQuery({
+    queryKey: ['followCounts', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return { followers: 0, following: 0 };
+      const [followers, following] = await Promise.all([
+        getFollowersCount(user.id),
+        getFollowingCount(user.id),
+      ]);
+      return { followers, following };
+    },
+    enabled: !!user?.id,
+    onSuccess: (data) => {
+      setFollowersCount(data.followers);
+      setFollowingCount(data.following);
+    },
+  });
+
   // Query for a selected followed user's restaurants
   const { data: followedUserRestaurants = [], error: followedUserRestaurantsError } = useQuery({
     queryKey: ['followedUserRestaurants', selectedFollowedUserId],
@@ -310,6 +359,17 @@ const App: React.FC = () => {
   
   const geminiSearchMutation = useMutation({
     mutationFn: async (query: SearchQuery) => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        fetch('/.netlify/functions/log-api-usage', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ api_type: 'gemini-search' }),
+        });
+      }
       const { fetchRestaurantDetails } = await import('./services/geminiService');
       return fetchRestaurantDetails(query);
     },
@@ -347,6 +407,17 @@ const App: React.FC = () => {
 
   const analyzeRestaurantMutation = useMutation({
     mutationFn: async (restaurant: HotpepperRestaurant) => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          fetch('/.netlify/functions/log-api-usage', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({ api_type: 'gemini-analyze-restaurant' }),
+          });
+        }
         const response = await fetch('/.netlify/functions/gemini-analyze-restaurant', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -759,7 +830,10 @@ const App: React.FC = () => {
           onClose={() => setIsSidebarOpen(false)}
           isCollapsed={isSidebarCollapsed}
           isReadOnly={isReadOnlyMode}
-          
+          userProfile={userProfile}
+          isSuperAdmin={userProfile?.is_super_admin || false}
+          followersCount={followersCount}
+          followingCount={followingCount}
           onSelectMenuItem={setView}
           currentView={view}
         />
@@ -774,7 +848,8 @@ const App: React.FC = () => {
           className={twMerge(
             "flex-1 overflow-y-auto transition-all duration-300 ease-in-out",
             "md:transition-[margin-left]", // Add transition for margin
-            isSidebarCollapsed ? "md:ml-20" : "md:ml-80"
+            isSidebarCollapsed ? "md:ml-20" : "md:ml-80",
+          "pb-16 md:pb-0"
           )}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
@@ -994,8 +1069,13 @@ const App: React.FC = () => {
                      {(isReadOnlyMode) && <div className="w-full sm:w-auto" />}
 
                     <div className="flex items-center gap-2">
-                      {!isReadOnlyMode && !selectedFollowedUserId && <button onClick={() => setIsManualAddModalOpen(true)} className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-md bg-light-primary text-white hover:bg-light-primary-hover dark:bg-dark-primary dark:text-slate-900 dark:hover:bg-dark-primary-hover transition-colors"><PlusIcon /><span>手動で追加</span></button>}
-                      {!isReadOnlyMode && !selectedFollowedUserId && <button onClick={handleOpenShareModal} className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-md bg-slate-600 text-white hover:bg-slate-700 transition-colors"><ShareIcon /><span>共有</span></button>}
+                      {!isReadOnlyMode && !selectedFollowedUserId && (
+                        <>
+                          <button onClick={() => setIsManualAddModalOpen(true)} className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-md bg-slate-600 text-white hover:bg-slate-700 transition-colors"><PlusIcon /><span>手動で作成</span></button>
+                          <button onClick={() => setView('search')} className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-md bg-slate-600 text-white hover:bg-slate-700 transition-colors"><SearchIcon className="w-4 h-4" /><span>お店を探す</span></button>
+                          <button onClick={handleOpenShareModal} className="flex items-center gap-1.5 px-3 py-2 text-sm font-semibold rounded-md bg-slate-600 text-white hover:bg-slate-700 transition-colors"><ShareIcon /><span>共有</span></button>
+                        </>
+                      )}
                     </div>
                   </div>
                    {isFilterVisible && !isReadOnlyMode && (
@@ -1141,6 +1221,14 @@ const App: React.FC = () => {
                 <SettingsPage />
               )}
 
+              {view === 'admin_user_management' && !isReadOnlyMode && userProfile?.is_super_admin && (
+                <AdminPage />
+              )}
+
+              {view === 'monitoring' && !isReadOnlyMode && userProfile?.is_super_admin && (
+                <MonitoringView />
+              )}
+
             </div>
           </div>
         </main>
@@ -1191,6 +1279,8 @@ const App: React.FC = () => {
           }}
         />
       )}
+
+      {!isReadOnlyMode && user && <BottomTabBar currentView={view} onSelectView={setView} />}
     </>
   );
 };

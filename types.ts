@@ -1,6 +1,6 @@
 
 
-export type View = 'favorites' | 'search' | 'map' | 'analysis' | 'userSearch' | 'followed' | 'timeline' | 'areaList' | 'followers' | 'settings' | 'pendingRequests';
+export type View = 'favorites' | 'search' | 'map' | 'analysis' | 'userSearch' | 'followed' | 'timeline' | 'areaList' | 'followers' | 'settings' | 'pendingRequests' | 'admin_user_management' | 'monitoring';
 export type SidebarFilter = { type: 'prefecture' | 'city'; value: string };
 
 export interface Source {
@@ -43,7 +43,8 @@ export interface RestaurantDetails {
 
 export interface SearchQuery {
   prefecture: string;
-  city: string;
+  middle_area_code: string;
+  genre: string;
   storeName: string;
 }
 
@@ -120,3 +121,10 @@ export type ShareFilters = {
   sidebarFilters: SidebarFilter[];
   genreFilters: string[];
 } | null;
+
+export interface UserProfile {
+  username: string;
+  display_name: string;
+  avatar_url: string;
+  is_super_admin: boolean;
+}

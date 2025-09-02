@@ -41,23 +41,25 @@ const handler: Handler = async (event: HandlerEvent) => {
       '沖縄県': 'Z11',
     };
 
-    const largeAreaCode = prefectureToLargeAreaCode[query.prefecture];
-    if (largeAreaCode) {
-      params.append('large_area', largeAreaCode);
+    if (query.genre) {
+      params.append('genre', query.genre);
     }
 
-    // For the keyword, use the more specific city and store name.
-    const keywordString = [query.city, query.storeName]
-      .filter(Boolean)
-      .join(' ');
-
-    // If the user provides a specific keyword, use it.
-    // Otherwise, use a generic term "レストラン" for a broad search within the prefecture.
-    // This avoids the API error from using the prefecture name as the keyword.
-    if (keywordString) {
-      params.append('keyword', keywordString);
+    if (query.middle_area_code) {
+      params.append('middle_area', query.middle_area_code);
     } else {
-      params.append('keyword', 'レストラン'); // Generic fallback keyword
+      const largeAreaCode = prefectureToLargeAreaCode[query.prefecture];
+      if (largeAreaCode) {
+        params.append('large_area', largeAreaCode);
+      }
+    }
+
+    // For the keyword, use the more specific store name.
+    if (query.storeName) {
+      params.append('keyword', query.storeName);
+    } else if (!query.middle_area_code) {
+        // If no middle area is selected, a keyword is required to avoid errors.
+        params.append('keyword', 'レストラン');
     }
     
     const url = `https://webservice.recruit.co.jp/hotpepper/shop/v1/?${params.toString()}`;
@@ -93,7 +95,7 @@ const handler: Handler = async (event: HandlerEvent) => {
     
     const formattedResults: HotpepperRestaurant[] = filteredShops.map((shop: any) => {
         const prefecture = query.prefecture;
-        const city = shop.service_area?.name || query.city || '不明';
+        const city = shop.middle_area?.name || '不明';
 
         return {
             id: shop.id,
