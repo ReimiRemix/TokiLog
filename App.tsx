@@ -228,11 +228,6 @@ const App: React.FC = () => {
         setUserProfile(data as UserProfile);
       }
     },
-  useEffect(() => {
-    if (userProfile) {
-      console.log('App.tsx - userProfile.is_super_admin in useEffect:', userProfile.is_super_admin);
-    }
-  }, [userProfile]);
   });
 
   useQuery({
@@ -251,6 +246,12 @@ const App: React.FC = () => {
       setFollowingCount(data.following);
     },
   });
+
+  useEffect(() => {
+    if (userProfile) {
+      console.log('App.tsx - userProfile.is_super_admin in useEffect:', userProfile.is_super_admin);
+    }
+  }, [userProfile]);
 
   // Query for a selected followed user's restaurants
   const { data: followedUserRestaurants = [], error: followedUserRestaurantsError } = useQuery({
