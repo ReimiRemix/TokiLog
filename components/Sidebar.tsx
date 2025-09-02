@@ -266,6 +266,7 @@ const Sidebar: React.FC<SidebarProps> = ({
               <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">フォロワー</p>
             </button>
           </div>
+          
         </div>
       )}
 
@@ -280,7 +281,8 @@ const Sidebar: React.FC<SidebarProps> = ({
                     onClose();
                   }}
                   className={twMerge(
-                    "flex-1 flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                    "flex-1 flex items-center rounded-md text-sm font-medium transition-colors",
+                    showFullContent ? "gap-3 px-3 py-2" : "justify-center px-0 py-2", // Adjusted for collapsed state
                     currentView === item.id
                       ? "bg-light-primary-soft-bg text-light-primary dark:bg-dark-primary-soft-bg dark:text-dark-primary"
                       : "text-light-text-secondary dark:text-dark-text-secondary hover:bg-slate-100 dark:hover:bg-slate-700/50"
