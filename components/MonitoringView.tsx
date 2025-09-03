@@ -87,8 +87,22 @@ const MonitoringView: React.FC = () => {
         </div>
         <div className="p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
           <h4 className="font-semibold">Supabase</h4>
-          <p className="text-sm text-gray-600 dark:text-gray-400">DBサイズ</p>
-          <p className="text-2xl font-bold">{supabaseUsage ? `${(supabaseUsage.db_size / 1024 / 1024).toFixed(2)} MB` : 'N/A'}</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400">DB利用サイズ</p>
+          {supabaseUsage ? (
+            <>
+              <p className="text-2xl font-bold">
+                {formatBytes(supabaseUsage.db_size)} / 500 MB
+              </p>
+              <div className="w-full bg-gray-300 dark:bg-gray-600 rounded-full h-2.5 mt-2">
+                <div 
+                  className="bg-green-500 h-2.5 rounded-full" 
+                  style={{ width: `${(supabaseUsage.db_size / (500 * 1024 * 1024)) * 100}%` }}
+                ></div>
+              </div>
+            </>
+          ) : (
+            <p className="text-2xl font-bold">N/A</p>
+          )}
         </div>
       </div>
     </div>
