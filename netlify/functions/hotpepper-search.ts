@@ -1,15 +1,15 @@
 
 import type { Handler, HandlerEvent } from "@netlify/functions";
 import type { HotpepperRestaurant, SearchQuery } from "../../types";
-
+import { GoogleGenAI } from "@google/genai";
 
 const handler: Handler = async (event: HandlerEvent) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method Not Allowed' }) };
   }
 
-  const API_KEY = process.env.HOTPEPPER_API_KEY;
-  if (!API_KEY) {
+  const HOTPEPPER_API_KEY = process.env.HOTPEPPER_API_KEY;
+  if (!HOTPEPPER_API_KEY) {
     return { statusCode: 500, body: JSON.stringify({ error: "ホットペッパーAPIキーがサーバーに設定されていません。" }) };
   }
 
@@ -22,62 +22,95 @@ const handler: Handler = async (event: HandlerEvent) => {
       return { statusCode: 400, body: JSON.stringify({ error: '都道府県は必須です。' }) };
     }
     
-    const params = new URLSearchParams({
-        key: API_KEY,
-        format: 'json',
-        count: '30' // Increase count to get more results to filter from
-    });
-
-    const prefectureToLargeAreaCode: { [key: string]: string } = {
-      '北海道': 'Z01', '青森県': 'Z02', '岩手県': 'Z02', '宮城県': 'Z02', '秋田県': 'Z02', '山形県': 'Z02', '福島県': 'Z02',
-      '茨城県': 'Z03', '栃木県': 'Z03', '群馬県': 'Z03', '埼玉県': 'Z03', '千葉県': 'Z03', '東京都': 'Z03', '神奈川県': 'Z03',
-      '新潟県': 'Z04', '富山県': 'Z04', '石川県': 'Z04', '福井県': 'Z04',
-      '山梨県': 'Z05', '長野県': 'Z05',
-      '岐阜県': 'Z06', '静岡県': 'Z06', '愛知県': 'Z06', '三重県': 'Z06',
-      '滋賀県': 'Z07', '京都府': 'Z07', '大阪府': 'Z07', '兵庫県': 'Z07', '奈良県': 'Z07', '和歌山県': 'Z07',
-      '鳥取県': 'Z08', '島根県': 'Z08', '岡山県': 'Z08', '広島県': 'Z08', '山口県': 'Z08',
-      '徳島県': 'Z09', '香川県': 'Z09', '愛媛県': 'Z09', '高知県': 'Z09',
-      '福岡県': 'Z10', '佐賀県': 'Z10', '長崎県': 'Z10', '熊本県': 'Z10', '大分県': 'Z10', '宮崎県': 'Z10', '鹿児島県': 'Z10',
-      '沖縄県': 'Z11',
+    const buildParams = (q: SearchQuery) => {
+        const params = new URLSearchParams({
+            key: HOTPEPPER_API_KEY,
+            format: 'json',
+            count: '30'
+        });
+        if (q.genre) params.append('genre', q.genre);
+        if (q.small_area_code) {
+            params.append('small_area', q.small_area_code);
+        } else if (q.prefecture_code) {
+            params.append('pref', q.prefecture_code);
+        }
+        if (q.storeName) {
+            params.append('keyword', q.storeName);
+        } else if (!q.small_area_code) {
+            params.append('keyword', 'レストラン');
+        }
+        return params;
     };
 
-    if (query.genre) {
-      params.append('genre', query.genre);
-    }
-
-    if (query.middle_area_code) {
-      params.append('middle_area', query.middle_area_code);
-    } else {
-      const largeAreaCode = prefectureToLargeAreaCode[query.prefecture];
-      if (largeAreaCode) {
-        params.append('large_area', largeAreaCode);
-      }
-    }
-
-    // For the keyword, use the more specific store name.
-    if (query.storeName) {
-      params.append('keyword', query.storeName);
-    } else if (!query.middle_area_code) {
-        // If no middle area is selected, a keyword is required to avoid errors.
-        params.append('keyword', 'レストラン');
-    }
+    let requestParams = buildParams(query);
+    let url = `http://webservice.recruit.co.jp/hotpepper/gourmet/v1/?${requestParams.toString()}`;
     
-    const url = `https://webservice.recruit.co.jp/hotpepper/shop/v1/?${params.toString()}`;
-    
-    const response = await fetch(url);
-    if (!response.ok) {
-      // This handles network-level errors.
-      throw new Error(`ホットペッパーAPIへのリクエストに失敗しました: ${response.statusText}`);
-    }
+    let response = await fetch(url);
+    let data = await response.json();
 
-    const data = await response.json();
-
-    // This handles API-level errors, like the "condition too broad" error.
+    // If condition is too broad, try to optimize with AI
     if (data.results.error && data.results.error[0]?.code === 3000) {
+        console.log("Hotpepper API error 3000: Condition too broad. Attempting AI optimization.");
+        const GEMINI_API_KEY = process.env.API_KEY;
+        if (GEMINI_API_KEY) {
+            try {
+                const ai = new GoogleGenAI(GEMINI_API_KEY);
+                const model = ai.getGenerativeModel({ model: "gemini-pro" });
+
+                const prompt = `
+あなたはホットペッパーAPIの検索エキスパートです。
+以下の検索クエリで「検索範囲が広すぎる」というエラーが発生しました。
+このエラーを回避し、ユーザーの意図を汲んだ上で、より具体的な検索条件をJSON形式で提案してください。
+
+# 元の検索クエリ
+${JSON.stringify(query, null, 2)}
+
+# 提案のルール
+- `small_area_code`が指定されていない場合、`prefecture_code` (${query.prefecture_code}) に関連する人気のエリアや中心的なエリアの`small_area_code`を1つ提案してください。
+- `keyword`が「レストラン」のような一般的な単語の場合は、より具体的なジャンルや料理名を`keyword`として提案してください。（例：「イタリアン」「ラーメン」など）
+- `genre`を追加または変更することも有効です。
+- 回答はJSONオブジェクトのみとし、説明やマークダウンは含めないでください。
+- 元のクエリに含まれる`prefecture`, `prefecture_code`, `storeName`は変更しないでください。
+
+# 出力形式 (JSON)
+{
+  "small_area_code": "<提案する小エリアコード>",
+  "genre": "<提案するジャンルコード>",
+  "keyword": "<提案するキーワード>"
+}
+`;
+
+                const result = await model.generateContent(prompt);
+                const aiResponse = await result.response;
+                const text = aiResponse.text().replace(/```json|```/g, '').trim();
+                const optimizedSuggestion = JSON.parse(text);
+
+                console.log("AI suggestion:", optimizedSuggestion);
+
+                const newQuery = { ...query, ...optimizedSuggestion };
+                requestParams = buildParams(newQuery);
+                url = `http://webservice.recruit.co.jp/hotpepper/gourmet/v1/?${requestParams.toString()}`;
+                
+                console.log("Retrying with new URL:", url);
+                response = await fetch(url);
+                data = await response.json();
+
+            } catch (e) {
+                console.error("AI optimization failed:", e);
+                // If AI optimization fails, return the original error to the user
+                return {
+                    statusCode: 400,
+                    body: JSON.stringify({ error: "検索範囲が広すぎます。AIによる条件絞り込みにも失敗しました。エリアやキーワードをより具体的に指定してください。" }),
+                };
+            }
+        }
+    }
+
+    if (data.results.error) {
         return {
-            statusCode: 400, // Bad Request
-            body: JSON.stringify({ error: "検索範囲が広すぎます。市区町村を指定するか、より具体的なキーワードで検索してください。" }),
-        };
+            statusCode: 400,
+            body: JSON.stringify({ error: data.results.error[0].message || "ホットペッパーAPIでエラーが発生しました。" })
+        }
     }
 
     if (!data.results || data.results.results_available === 0) {
@@ -88,29 +121,18 @@ const handler: Handler = async (event: HandlerEvent) => {
         };
     }
 
-    // Post-filter the results to ensure they are in the correct prefecture.
     const filteredShops = (data.results.shop || []).filter((shop: any) => 
         shop.address && shop.address.includes(query.prefecture)
     );
     
     const formattedResults: HotpepperRestaurant[] = filteredShops.map((shop: any) => {
-        const prefecture = query.prefecture;
         const city = shop.middle_area?.name || '不明';
-
         return {
-            id: shop.id,
-            name: shop.name,
-            address: shop.address,
-            hours: shop.open,
-            latitude: shop.lat,
-            longitude: shop.lng,
-            prefecture,
-            city,
-            genre: shop.genre?.name || 'ジャンルなし',
-            catch: shop.catch || '',
+            id: shop.id, name: shop.name, address: shop.address, hours: shop.open,
+            latitude: shop.lat, longitude: shop.lng, prefecture: query.prefecture, city,
+            genre: shop.genre?.name || 'ジャンルなし', catch: shop.catch || '',
             photoUrl: shop.photo?.pc?.l || 'https://via.placeholder.com/300',
-            siteUrl: shop.urls?.pc || '',
-            isFromHotpepper: true,
+            siteUrl: shop.urls?.pc || '', isFromHotpepper: true,
         };
     });
     

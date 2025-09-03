@@ -43,8 +43,9 @@ export interface RestaurantDetails {
 
 export interface SearchQuery {
   prefecture: string;
-  city?: string; // Added city property
-  middle_area_code: string;
+  large_area_code?: string;
+  city?: string;
+  small_area_code?: string;
   genre: string;
   storeName: string;
 }

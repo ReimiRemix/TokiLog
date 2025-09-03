@@ -10,18 +10,18 @@ const handler: Handler = async (event: HandlerEvent) => {
     return { statusCode: 500, body: JSON.stringify({ error: "ホットペッパーAPIキーがサーバーに設定されていません。" }) };
   }
 
-  const largeAreaCode = event.queryStringParameters?.large_area_code;
-  if (!largeAreaCode) {
-    return { statusCode: 400, body: JSON.stringify({ error: 'large_area_code is required' }) };
+  const prefectureCode = event.queryStringParameters?.prefecture_code;
+  if (!prefectureCode) {
+    return { statusCode: 400, body: JSON.stringify({ error: 'prefecture_code is required' }) };
   }
 
   const params = new URLSearchParams({
     key: API_KEY,
     format: 'json',
-    large_area: largeAreaCode,
+    pref: prefectureCode,
   });
 
-  const url = `http://webservice.recruit.co.jp/hotpepper/middle_area/v1/?${params.toString()}`;
+  const url = `http://webservice.recruit.co.jp/hotpepper/small_area/v1/?${params.toString()}`;
 
   try {
     const response = await fetch(url);
@@ -38,7 +38,7 @@ const handler: Handler = async (event: HandlerEvent) => {
       };
     }
 
-    const middleAreas = data.results.middle_area.map((area: any) => ({
+    const smallAreas = data.results.small_area.map((area: any) => ({
       code: area.code,
       name: area.name,
     }));
@@ -46,7 +46,7 @@ const handler: Handler = async (event: HandlerEvent) => {
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(middleAreas),
+      body: JSON.stringify(smallAreas),
     };
   } catch (error) {
     console.error("Error in hotpepper-area-search function:", error);

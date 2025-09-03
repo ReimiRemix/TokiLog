@@ -473,9 +473,13 @@ const App: React.FC = () => {
       }
       return (await response.json()) as HotpepperRestaurant[];
     },
-    onSuccess: (data) => {
+    onSuccess: (data, query) => {
       setSearchResults(data);
       setSearchError(null); // Clear previous errors on new success
+      if (data.length === 0) {
+        geminiSearchMutation.mutate(query);
+        setGeminiSearchTriggered(true);
+      }
     },
     onError: (error) => {
       setSearchResults([]);

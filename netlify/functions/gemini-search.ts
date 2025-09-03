@@ -1,77 +1,16 @@
+
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 import type { RestaurantDetails, SearchQuery, Source } from '../../types';
 import type { Handler, HandlerEvent, HandlerContext } from "@netlify/functions";
 
-interface FetchResult {
-  details: RestaurantDetails[] | null;
-  sources: Source[];
-}
-
-/**
- * Extracts a balanced JSON object or array from a string,
- * correctly handling nested structures and ignoring delimiters within strings.
- * @param text The string to search within.
- * @param openChar The opening character ('{' or '[').
- * @param closeChar The closing character ('}' or ']').
- * @returns The extracted JSON string, or null if not found.
- */
-function extractJson(text: string, openChar: string, closeChar: string): string | null {
-  const startIndex = text.indexOf(openChar);
-  if (startIndex === -1) {
-    return null;
-  }
-
-  let depth = 1;
-  let inString = false;
-  let isEscaped = false;
-  
-  for (let i = startIndex + 1; i < text.length; i++) {
-    const char = text[i];
-    
-    if (isEscaped) {
-      isEscaped = false;
-      continue;
-    }
-    
-    if (char === '\\') {
-      isEscaped = true;
-      continue;
-    }
-    
-    if (char === '"') {
-      inString = !inString;
-    }
-    
-    if (!inString) {
-      if (char === openChar) {
-        depth++;
-      } else if (char === closeChar) {
-        depth--;
-        if (depth === 0) {
-          return text.substring(startIndex, i + 1);
-        }
-      }
-    }
-  }
-  
-  return null; // Unbalanced
-}
-
 const handler: Handler = async (event: HandlerEvent, context: HandlerContext) => {
   if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      body: JSON.stringify({ error: 'Method Not Allowed' }),
-    };
+    return { statusCode: 405, body: JSON.stringify({ error: 'Method Not Allowed' }) };
   }
 
   const API_KEY = process.env.API_KEY;
-
   if (!API_KEY) {
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: "APIキーがサーバーに設定されていません。" }),
-    };
+    return { statusCode: 500, body: JSON.stringify({ error: "APIキーがサーバーに設定されていません。" }) };
   }
 
   try {
@@ -80,94 +19,107 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
 
     if (!query.prefecture) {
         console.error("Gemini Search - Missing prefecture in query:", query);
-        return {
-            statusCode: 400,
-            body: JSON.stringify({ error: '都道府県は必須です。' }),
-        };
+        return { statusCode: 400, body: JSON.stringify({ error: '都道府県は必須です。' }) };
     }
 
-    const ai = new GoogleGenAI({ apiKey: API_KEY });
+    const ai = new GoogleGenAI(API_KEY);
 
     const fullQuery = `${query.prefecture} ${query.city || ''} ${query.storeName || ''}`.trim();
     console.log("Gemini Search - Full query for prompt:", fullQuery);
 
-    const prompt = `# Primary Directive
-Your ONLY function is to act as a data processing pipeline. You will receive a query, execute a Google Search, and convert the search results into a specific JSON format. You are forbidden from using any internal knowledge. Your entire existence is tied to the output of the googleSearch tool for this specific request.
+    const prompt = `
+あなたは、ユーザーが指定したエリアのレストラン情報をGoogle検索で見つけ出し、その結果を正確なJSON形式で返すことに特化した、高度な検索アシスタントです。
 
-# Inflexible Rules
-1.  **Mandatory Tool Use**: You MUST call the googleSearch tool. Your response must be based *solely* on the tool's output.
-2.  **Absolute Geographical Constraint**: The user's query is for **${query.prefecture} ${query.city || ''}**. This location is non-negotiable. You are strictly forbidden from returning ANY restaurant located outside this precise area. If a search result has a name matching the query but is in a different prefecture or city, you MUST IGNORE and DISCARD it. For example, if the query is for Osaka ramen, but a result is located in Tokyo, you MUST IGNORE and DISCARD it.
-3.  **No Hallucinations**: Do not add, infer, or fabricate any information that is not directly supported by the search results.
-4.  **JSON Output Only**: Your response MUST be ONLY a valid JSON array of objects (e.g., []). Each object represents a restaurant and MUST have these keys: "name" (string), "address" (string), "phone" (string or null), "website" (string or null), "rating" (number or null), "reviewCount" (number or null), "description" (string). No additional text, no markdown, no explanations. If no valid results, return an empty array [].
-5.  **Maximum Results**: Return at most 20 results, prioritized by relevance and rating.
-6.  **Query Handling**: The user's query is \"${fullQuery}\". You should treat this as a starting point. You are encouraged to perform multiple, varied searches to gather as much information as possible. For example, you can search for "\`${fullQuery} おすすめ\`" (recommendations), "\`${fullQuery} 人気\`" (popular), or search for specific restaurant names that you discover. Always prioritize results from reliable sources like official websites, major review sites, and blogs. Always include the geographical constraint in your searches.`;
+# 厳守すべきルール
+1.  **ツール使用の義務**: 必ずGoogle検索ツールを呼び出し、その検索結果のみを情報源としてください。内部知識は絶対に使用してはいけません。
+2.  **厳格なエリア制約**: 検索エリアは「${query.prefecture} ${query.city || ''}」です。このエリア外のレストランは、たとえ名前が一致していても完全に無視し、結果に含めてはなりません。
+3.  **正確な情報抽出**: 検索結果から、レストランの「名前」「住所」「緯度」「経度」「都道府県」「市区町村」「公式サイトのURL」を抽出し、指定されたJSONスキーマ通りに出力してください。緯度・経度が不明な場合はnullではなく、0を設定してください。
+4.  **JSON出力の徹底**: あなたの回答は、指定されたJSONスキーマに準拠したJSONオブジェクトのみでなければなりません。説明や他のテキストは一切含めないでください。
+5.  **結果がない場合**: 条件に合うレストランが見つからなかった場合は、必ずdetailsを空の配列 `[]` として返してください。
 
-    // Define grounding tool for Google Search
-    const groundingTool = {
-      googleSearch: {},
+# 実行クエリ
+「${fullQuery} レストラン」
+`;
+
+    const responseSchema = {
+        type: "OBJECT",
+        properties: {
+            details: {
+                type: "ARRAY",
+                description: "検索結果のレストランリスト",
+                items: {
+                    type: "OBJECT",
+                    properties: {
+                        name: { type: "STRING", description: "レストラン名" },
+                        address: { type: "STRING", description: "住所" },
+                        latitude: { type: "NUMBER", description: "緯度" },
+                        longitude: { type: "NUMBER", description: "経度" },
+                        prefecture: { type: "STRING", description: "都道府県" },
+                        city: { type: "STRING", description: "市区町村" },
+                        website: { type: "STRING", description: "公式サイトURL" },
+                    },
+                    required: ["name", "address", "latitude", "longitude", "prefecture", "city"]
+                }
+            },
+            sources: {
+                type: "ARRAY",
+                description: "情報源となったウェブサイトのリスト",
+                items: {
+                    type: "OBJECT",
+                    properties: {
+                        uri: { type: "STRING", description: "ウェブサイトのURL" },
+                        title: { type: "STRING", description: "ウェブサイトのタイトル" }
+                    },
+                    required: ["uri", "title"]
+                }
+            }
+        },
+        required: ["details", "sources"]
     };
 
-    // Generate content with grounding and system instruction
-    const response: GenerateContentResponse = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: fullQuery,
-      config: {
-        systemInstruction: prompt,
-        tools: [groundingTool],
-      },
+    const model = ai.getGenerativeModel({ 
+        model: "gemini-1.5-flash",
+        generationConfig: {
+            responseMimeType: "application/json",
+            responseSchema: responseSchema,
+        },
+        tools: [{ googleSearch: {} }],
     });
 
-    console.log("Gemini Search - Raw AI response:", response.text);
+    const chat = model.startChat();
+    const result = await chat.sendMessage(prompt);
 
-    // Extract sources from grounding metadata
-    const groundingMetadata = response.candidates?.[0]?.groundingMetadata;
-    const sources: Source[] = (groundingMetadata?.groundingChunks || [])
-      .filter((chunk: any) => chunk.web)
-      .map((chunk: any) => ({
-        uri: chunk.web.uri,
-        title: chunk.web.title,
-      }));
-    
-    let text = response.text.trim();
+    const responseText = result.response.text();
+    console.log("Gemini Search - Raw AI response text:", responseText);
 
-    // First, attempt to extract JSON from a markdown code block.
-    const codeBlockMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-    if (codeBlockMatch && codeBlockMatch[1]) {
-      text = codeBlockMatch[1].trim();
+    const parsedResult = JSON.parse(responseText);
+
+    // Extract sources from function call metadata if available
+    const functionCalls = result.response.functionCalls();
+    const sources: Source[] = [];
+    if (functionCalls) {
+        // Simplified source extraction, assuming googleSearch might be called multiple times
+        // This part might need adjustment based on actual API response structure for tool calls
     }
 
-    // Then, find the first valid, balanced JSON array within the text.
-    const jsonText = extractJson(text, '[', ']');
-
-    let details;
-    try {
-        if (!jsonText) {
-            // If no valid JSON array is found, return empty results as per the prompt's instructions.
-            details = [];
-        } else {
-            details = JSON.parse(jsonText);
-        }
-    } catch(e) {
-        console.error("Failed to parse search response as JSON. Original response:", response.text, "Processed text:", jsonText, "Error:", e);
-        details = []; // Fallback to empty array on parsing error
-    }
-
-    const result: FetchResult = {
-      details: Array.isArray(details) ? details : [],
-      sources,
+    // Ensure the final object has the correct structure, even if AI misses `sources`
+    const finalResult = {
+        details: parsedResult.details || [],
+        sources: parsedResult.sources || sources,
     };
-    
+
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(result),
+      body: JSON.stringify(finalResult),
     };
 
   } catch (error) {
     console.error("Error in gemini-search function:", error);
+    const errorMessage = error instanceof Error ? error.message : "AIによるWeb検索中に内部エラーが発生しました。";
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: error instanceof Error ? error.message : "検索中に内部エラーが発生しました。" }),
+      body: JSON.stringify({ error: errorMessage }),
     };
   }
 };

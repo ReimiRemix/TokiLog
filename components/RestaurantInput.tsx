@@ -9,79 +9,65 @@ interface RestaurantInputProps {
 }
 
 const prefectures: { name: string; code: string; }[] = [
-    { name: '北海道', code: 'Z011' },
-    { name: '青森県', code: 'Z012' },
-    { name: '岩手県', code: 'Z013' },
-    { name: '宮城県', code: 'Z014' },
-    { name: '秋田県', code: 'Z015' },
-    { name: '山形県', code: 'Z016' },
-    { name: '福島県', code: 'Z017' },
-    { name: '茨城県', code: 'Z021' },
-    { name: '栃木県', code: 'Z022' },
-    { name: '群馬県', code: 'Z023' },
-    { name: '埼玉県', code: 'Z024' },
-    { name: '千葉県', code: 'Z025' },
-    { name: '東京都', code: 'Z026' },
-    { name: '神奈川県', code: 'Z027' },
-    { name: '新潟県', code: 'Z031' },
-    { name: '富山県', code: 'Z032' },
-    { name: '石川県', code: 'Z033' },
-    { name: '福井県', code: 'Z034' },
-    { name: '山梨県', code: 'Z035' },
-    { name: '長野県', code: 'Z036' },
-    { name: '岐阜県', code: 'Z041' },
-    { name: '静岡県', code: 'Z042' },
-    { name: '愛知県', code: 'Z043' },
-    { name: '三重県', code: 'Z044' },
-    { name: '滋賀県', code: 'Z051' },
-    { name: '京都府', code: 'Z052' },
-    { name: '大阪府', code: 'Z053' },
-    { name: '兵庫県', code: 'Z054' },
-    { name: '奈良県', code: 'Z055' },
-    { name: '和歌山県', code: 'Z056' },
-    { name: '鳥取県', code: 'Z061' },
-    { name: '島根県', code: 'Z062' },
-    { name: '岡山県', code: 'Z063' },
-    { name: '広島県', code: 'Z064' },
-    { name: '山口県', code: 'Z065' },
-    { name: '徳島県', code: 'Z071' },
-    { name: '香川県', code: 'Z072' },
-    { name: '愛媛県', code: 'Z073' },
-    { name: '高知県', code: 'Z074' },
-    { name: '福岡県', code: 'Z081' },
-    { name: '佐賀県', code: 'Z082' },
-    { name: '長崎県', code: 'Z083' },
-    { name: '熊本県', code: 'Z084' },
-    { name: '大分県', code: 'Z085' },
-    { name: '宮崎県', code: 'Z086' },
-    { name: '鹿児島県', code: 'Z087' },
-    { name: '沖縄県', code: 'Z088' },
+    { name: '北海道', code: 'PREF01' },
+    { name: '青森県', code: 'PREF02' },
+    { name: '岩手県', code: 'PREF03' },
+    { name: '宮城県', code: 'PREF04' },
+    { name: '秋田県', code: 'PREF05' },
+    { name: '山形県', code: 'PREF06' },
+    { name: '福島県', code: 'PREF07' },
+    { name: '茨城県', code: 'PREF08' },
+    { name: '栃木県', code: 'PREF09' },
+    { name: '群馬県', code: 'PREF10' },
+    { name: '埼玉県', code: 'PREF11' },
+    { name: '千葉県', code: 'PREF12' },
+    { name: '東京都', code: 'PREF13' },
+    { name: '神奈川県', code: 'PREF14' },
+    { name: '新潟県', code: 'PREF15' },
+    { name: '富山県', code: 'PREF16' },
+    { name: '石川県', code: 'PREF17' },
+    { name: '福井県', code: 'PREF18' },
+    { name: '山梨県', code: 'PREF19' },
+    { name: '長野県', code: 'PREF20' },
+    { name: '岐阜県', code: 'PREF21' },
+    { name: '静岡県', code: 'PREF22' },
+    { name: '愛知県', code: 'PREF23' },
+    { name: '三重県', code: 'PREF24' },
+    { name: '滋賀県', code: 'PREF25' },
+    { name: '京都府', code: 'PREF26' },
+    { name: '大阪府', code: 'PREF27' },
+    { name: '兵庫県', code: 'PREF28' },
+    { name: '奈良県', code: 'PREF29' },
+    { name: '和歌山県', code: 'PREF30' },
+    { name: '鳥取県', code: 'PREF31' },
+    { name: '島根県', code: 'PREF32' },
+    { name: '岡山県', code: 'PREF33' },
+    { name: '広島県', code: 'PREF34' },
+    { name: '山口県', code: 'PREF35' },
+    { name: '徳島県', code: 'PREF36' },
+    { name: '香川県', code: 'PREF37' },
+    { name: '愛媛県', code: 'PREF38' },
+    { name: '高知県', code: 'PREF39' },
+    { name: '福岡県', code: 'PREF40' },
+    { name: '佐賀県', code: 'PREF41' },
+    { name: '長崎県', code: 'PREF42' },
+    { name: '熊本県', code: 'PREF43' },
+    { name: '大分県', code: 'PREF44' },
+    { name: '宮崎県', code: 'PREF45' },
+    { name: '鹿児島県', code: 'PREF46' },
+    { name: '沖縄県', code: 'PREF47' },
 ];
-
-const largeAreaMapping: { [key: string]: string } = {
-    '北海道': 'Z01',
-    '青森県': 'Z02', '岩手県': 'Z02', '宮城県': 'Z02', '秋田県': 'Z02', '山形県': 'Z02', '福島県': 'Z02',
-    '茨城県': 'Z03', '栃木県': 'Z03', '群馬県': 'Z03', '埼玉県': 'Z03', '千葉県': 'Z03', '東京都': 'Z03', '神奈川県': 'Z03',
-    '新潟県': 'Z04', '富山県': 'Z04', '石川県': 'Z04', '福井県': 'Z04',
-    '山梨県': 'Z05', '長野県': 'Z05',
-    '岐阜県': 'Z06', '静岡県': 'Z06', '愛知県': 'Z06', '三重県': 'Z06',
-    '滋賀県': 'Z07', '京都府': 'Z07', '大阪府': 'Z07', '兵庫県': 'Z07', '奈良県': 'Z07', '和歌山県': 'Z07',
-    '鳥取県': 'Z08', '島根県': 'Z08', '岡山県': 'Z08', '広島県': 'Z08', '山口県': 'Z08',
-    '徳島県': 'Z09', '香川県': 'Z09', '愛媛県': 'Z09', '高知県': 'Z09',
-    '福岡県': 'Z10', '佐賀県': 'Z10', '長崎県': 'Z10', '熊本県': 'Z10', '大分県': 'Z10', '宮崎県': 'Z10', '鹿児島県': 'Z10',
-    '沖縄県': 'Z11',
-};
 
 const formInputClasses = "mt-1 block w-full px-3 py-2 text-base bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md focus:ring-2 focus:ring-light-primary focus:border-light-primary transition duration-200 placeholder:text-slate-400 dark:placeholder:text-slate-500";
 
 const RestaurantInput: React.FC<RestaurantInputProps> = ({ onSearch, isLoading }) => {
   const [query, setQuery] = useState<SearchQuery>({
     prefecture: '',
-    middle_area_code: '',
+    small_area_code: '',
     genre: '',
     storeName: '',
   });
-  const [middleAreas, setMiddleAreas] = useState<{ code: string; name: string; }[]>([]);
+  const [smallAreas, setSmallAreas] = useState<{ code: string; name: string; }[]>([]);
   const [genres, setGenres] = useState<{ code: string; name: string; }[]>([]);
   const [isAreaLoading, setIsAreaLoading] = useState(false);
   const [isGenreLoading, setIsGenreLoading] = useState(false);
@@ -105,26 +91,24 @@ const RestaurantInput: React.FC<RestaurantInputProps> = ({ onSearch, isLoading }
 
   const handlePrefectureChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const prefectureName = e.target.value;
-    setQuery({ ...query, prefecture: prefectureName, middle_area_code: '' });
-    setMiddleAreas([]);
+    const selectedPrefecture = prefectures.find(p => p.name === prefectureName);
+    const prefectureCode = selectedPrefecture ? selectedPrefecture.code : '';
 
-    if (prefectureName) {
-      const largeAreaCode = largeAreaMapping[prefectureName];
-      console.log('RestaurantInput.tsx - largeAreaCode:', largeAreaCode);
-      if (largeAreaCode) {
-        setIsAreaLoading(true);
-        try {
-          const response = await fetch(`/.netlify/functions/hotpepper-area-search?large_area_code=${largeAreaCode}`);
-          if (response.ok) {
-            const data = await response.json();
-            console.log('RestaurantInput.tsx - fetched middleAreas data:', data);
-            setMiddleAreas(data);
-          }
-        } catch (error) {
-          console.error("Failed to fetch middle areas", error);
+    setQuery({ ...query, prefecture: prefectureName, small_area_code: '' });
+    setSmallAreas([]);
+
+    if (prefectureCode) {
+      setIsAreaLoading(true);
+      try {
+        const response = await fetch(`/.netlify/functions/hotpepper-area-search?prefecture_code=${prefectureCode}`);
+        if (response.ok) {
+          const data = await response.json();
+          setSmallAreas(data);
         }
-        setIsAreaLoading(false);
+      } catch (error) {
+        console.error("Failed to fetch small areas", error);
       }
+      setIsAreaLoading(false);
     }
   };
 
@@ -154,10 +138,10 @@ const RestaurantInput: React.FC<RestaurantInputProps> = ({ onSearch, isLoading }
               </select>
             </div>
             <div>
-              <label htmlFor="middle_area_code" className="block text-sm font-medium text-light-text dark:text-dark-text">市区町村</label>
-              <select name="middle_area_code" id="middle_area_code" value={query.middle_area_code} onChange={handleChange} disabled={isAreaLoading || middleAreas.length === 0} className={formInputClasses}>
+              <label htmlFor="small_area_code" className="block text-sm font-medium text-light-text dark:text-dark-text">市区町村</label>
+              <select name="small_area_code" id="small_area_code" value={query.small_area_code} onChange={handleChange} disabled={isAreaLoading || smallAreas.length === 0} className={formInputClasses}>
                 <option value="">指定しない</option>
-                {middleAreas.map(area => <option key={area.code} value={area.code}>{area.name}</option>)}              
+                {smallAreas.map(area => <option key={area.code} value={area.code}>{area.name}</option>)}              
               </select>
             </div>
             <div>
