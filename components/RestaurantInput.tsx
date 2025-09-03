@@ -63,15 +63,20 @@ const formInputClasses = "mt-1 block w-full px-3 py-2 text-base bg-light-bg dark
 const RestaurantInput: React.FC<RestaurantInputProps> = ({ onSearch, isLoading }) => {
   const [query, setQuery] = useState<SearchQuery>({
     prefecture: '',
+    prefecture_code: '',
     small_area_code: '',
+    small_area_text: '',
     genre: '',
+    genre_text: '',
     storeName: '',
   });
+  // smallAreasとgenresのstateは不要になりますが、互換性のため残しておきます
   const [smallAreas, setSmallAreas] = useState<{ code: string; name: string; }[]>([]);
   const [genres, setGenres] = useState<{ code: string; name: string; }[]>([]);
   const [isAreaLoading, setIsAreaLoading] = useState(false);
   const [isGenreLoading, setIsGenreLoading] = useState(false);
 
+  // ジャンルリストの取得は引き続き行います（参考情報として）
   useEffect(() => {
     const fetchGenres = async () => {
       setIsGenreLoading(true);
@@ -94,16 +99,18 @@ const RestaurantInput: React.FC<RestaurantInputProps> = ({ onSearch, isLoading }
     const selectedPrefecture = prefectures.find(p => p.name === prefectureName);
     const prefectureCode = selectedPrefecture ? selectedPrefecture.code : '';
 
-    setQuery({ ...query, prefecture: prefectureName, small_area_code: '' });
-    setSmallAreas([]);
+    setQuery({ ...query, prefecture: prefectureName, prefecture_code: prefectureCode, small_area_code: '', small_area_text: '' });
+    // smallAreasはUIで使われないため、更新は不要
+    setSmallAreas([]); // クリアしておきます
 
+    // 都道府県が選択されたら、その都道府県の市区町村リストを裏で取得しておきます（参考情報として）
     if (prefectureCode) {
       setIsAreaLoading(true);
       try {
         const response = await fetch(`/.netlify/functions/hotpepper-area-search?prefecture_code=${prefectureCode}`);
         if (response.ok) {
           const data = await response.json();
-          setSmallAreas(data);
+          setSmallAreas(data); // 取得したリストを保存
         }
       } catch (error) {
         console.error("Failed to fetch small areas", error);
@@ -114,7 +121,13 @@ const RestaurantInput: React.FC<RestaurantInputProps> = ({ onSearch, isLoading }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setQuery(prev => ({ ...prev, [name]: value }));
+    setQuery(prev => ({
+      ...prev,
+      [name]: value,
+      // ジャンルと市区町村のコードはフリーテキスト入力時はクリア
+      ...(name === 'genre_text' && { genre: '' }),
+      ...(name === 'small_area_text' && { small_area_code: '' }),
+    }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -138,18 +151,30 @@ const RestaurantInput: React.FC<RestaurantInputProps> = ({ onSearch, isLoading }
               </select>
             </div>
             <div>
-              <label htmlFor="small_area_code" className="block text-sm font-medium text-light-text dark:text-dark-text">市区町村</label>
-              <select name="small_area_code" id="small_area_code" value={query.small_area_code} onChange={handleChange} disabled={isAreaLoading || smallAreas.length === 0} className={formInputClasses}>
-                <option value="">指定しない</option>
-                {smallAreas.map(area => <option key={area.code} value={area.code}>{area.name}</option>)}              
-              </select>
+              <label htmlFor="small_area_text" className="block text-sm font-medium text-light-text dark:text-dark-text">市区町村</label>
+              <input
+                type="text"
+                id="small_area_text"
+                name="small_area_text"
+                value={query.small_area_text}
+                onChange={handleChange}
+                placeholder="例: 新宿, 渋谷" 
+                className={formInputClasses}
+                disabled={isLoading || !query.prefecture.trim()}
+              />
             </div>
             <div>
-              <label htmlFor="genre" className="block text-sm font-medium text-light-text dark:text-dark-text">ジャンル</label>
-              <select name="genre" id="genre" value={query.genre} onChange={handleChange} disabled={isGenreLoading} className={formInputClasses}>
-                <option value="">指定しない</option>
-                {genres.map(g => <option key={g.code} value={g.code}>{g.name}</option>)}              
-              </select>
+              <label htmlFor="genre_text" className="block text-sm font-medium text-light-text dark:text-dark-text">ジャンル</label>
+              <input
+                type="text"
+                id="genre_text"
+                name="genre_text"
+                value={query.genre_text}
+                onChange={handleChange}
+                placeholder="例: イタリアン, ラーメン" 
+                className={formInputClasses}
+                disabled={isLoading}
+              />
             </div>
           </div>
 
@@ -169,7 +194,7 @@ const RestaurantInput: React.FC<RestaurantInputProps> = ({ onSearch, isLoading }
 
           <button
               type="submit"
-              disabled={isLoading || !query.prefecture.trim()}
+              disabled={isLoading || !query.prefecture.trim()} // 都道府県は必須
               className="flex items-center justify-center w-full bg-light-primary text-white font-bold px-6 py-3 rounded-lg hover:bg-light-primary-hover dark:bg-dark-primary dark:text-slate-900 dark:hover:bg-dark-primary-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-light-primary transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
               {isLoading ? (

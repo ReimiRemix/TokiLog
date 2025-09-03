@@ -33,15 +33,28 @@ const handler: Handler = async (event: HandlerEvent) => {
         } else if (q.prefecture_code) {
             params.append('pref', q.prefecture_code);
         }
-        if (q.storeName) {
-            params.append('keyword', q.storeName);
-        } else if (!q.small_area_code) {
-            params.append('keyword', 'レストラン');
+
+        let keywords: string[] = [];
+        if (q.storeName) keywords.push(q.storeName);
+        if (q.genre_text) keywords.push(q.genre_text);
+        if (q.small_area_text) keywords.push(q.small_area_text);
+
+        if (keywords.length > 0) {
+            params.append('keyword', keywords.join(' '));
         }
         return params;
     };
 
     let requestParams = buildParams(query);
+
+    // Check if a keyword or area is specified, otherwise return an error
+    if (!requestParams.has('keyword') && !requestParams.has('small_area') && !requestParams.has('pref')) {
+        return {
+            statusCode: 400,
+            body: JSON.stringify({ error: '検索キーワード、ジャンル、市区町村のいずれかを指定してください。' }),
+        };
+    }
+
     let url = `http://webservice.recruit.co.jp/hotpepper/gourmet/v1/?${requestParams.toString()}`;
     
     let response = await fetch(url);
@@ -72,7 +85,7 @@ const handler: Handler = async (event: HandlerEvent) => {
                 ].join('\n');
 
                 const result = await model.generateContent(prompt);
-                const aiResponse = await result.response;
+                const aiResponse = result.response;
                 const text = aiResponse.text().replace(/```json|```/g, '').trim();
                 const optimizedSuggestion = JSON.parse(text);
 

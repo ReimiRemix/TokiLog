@@ -412,13 +412,19 @@ const App: React.FC = () => {
         throw new Error(`共有リストの読み込みに失敗しました: ${error.message}`);
       }
 
-      return (data || []).map(r => ({
-        id: r.id, createdAt: r.created_at, name: r.name, address: r.address,
-        hours: r.hours, latitude: r.latitude, longitude: r.longitude,
-        prefecture: r.prefecture, city: r.city, website: r.website,
-        sources: r.sources, visitCount: r.visit_count, userComment: r.user_comment,
-        customUrl: r.custom_url, genres: r.genres, priceRange: r.price_range, isClosed: r.is_closed,
-      })) as Restaurant[];
+      return (data || []).map(r => {
+        let sourcesData = r.sources;
+        if (typeof sourcesData === 'string') {
+          try { sourcesData = JSON.parse(sourcesData); } catch (e) { sourcesData = []; }
+        }
+        return {
+          id: r.id, createdAt: r.created_at, name: r.name, address: r.address,
+          hours: r.hours, latitude: r.latitude, longitude: r.longitude,
+          prefecture: r.prefecture, city: r.city, website: r.website,
+          sources: Array.isArray(sourcesData) ? sourcesData : [], visitCount: r.visit_count, userComment: r.user_comment,
+          customUrl: r.custom_url, genres: r.genres, priceRange: r.price_range, isClosed: r.is_closed,
+        };
+      }) as Restaurant[];
     },
     enabled: isReadOnlyMode && !!shareId && isShareDataLoaded,
     retry: false,
@@ -560,19 +566,6 @@ const App: React.FC = () => {
       }).select().single();
 
       if (error) throw new Error(`お気に入りへの追加に失敗しました: ${error.message}`);
-      
-      // Create notification
-      if (newRestaurantRecord) {
-        const { error: notificationError } = await supabase.from('notifications').insert({
-            user_id: user.id,
-            restaurant_id: newRestaurantRecord.id,
-            restaurant_name: newRestaurantRecord.name,
-        });
-        if (notificationError) {
-            // Log the error but don't block the user flow
-            console.warn("Failed to create notification:", notificationError.message);
-        }
-      }
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['restaurants', user?.id] });

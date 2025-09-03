@@ -48,7 +48,9 @@ export interface SearchQuery {
   city?: string;
   small_area_code?: string;
   genre: string;
+  genre_text?: string;
   storeName: string;
+  small_area_text?: string;
 }
 
 export type ManualAddFormData = Pick<Restaurant, 'name' | 'prefecture' | 'city' | 'address' | 'hours' | 'website' | 'genres' | 'priceRange'>;
@@ -99,10 +101,13 @@ export interface RecommendationResult {
 export interface Notification {
   id: string;
   created_at: string;
-  restaurant_id: string;
-  restaurant_name: string;
-  is_read: boolean;
   user_id: string;
+  type: 'new_favorite' | 'follow_request' | 'follow_accepted';
+  from_user_id?: string; // 通知の発生元ユーザー
+  restaurant_id?: string;
+  restaurant_name?: string;
+  message?: string; // カスタムメッセージ
+  is_read: boolean;
 }
 
 // For Chat with AI
