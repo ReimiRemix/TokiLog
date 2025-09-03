@@ -1,0 +1,185 @@
+cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation cdn.tailwindcss.com:64:1711
+Sidebar.tsx - isSuperAdmin prop: false 2 Sidebar.tsx:75:11
+App.tsx - user object: 
+Object { id: "3d14ad61-b49a-46d1-be8d-3e791d61da59", aud: "authenticated", role: "authenticated", email: "reimi.starremix@gmail.com", email_confirmed_at: "2025-08-29T07:35:31.49406Z", phone: "", confirmed_at: "2025-08-29T07:35:31.49406Z", last_sign_in_at: "2025-09-03T13:28:53.61144161Z", app_metadata: {…}, user_metadata: {…}, … }
+App.tsx:88:11
+App.tsx - user object: 
+Object { id: "3d14ad61-b49a-46d1-be8d-3e791d61da59", aud: "authenticated", role: "authenticated", email: "reimi.starremix@gmail.com", email_confirmed_at: "2025-08-29T07:35:31.49406Z", phone: "", confirmed_at: "2025-08-29T07:35:31.49406Z", last_sign_in_at: "2025-09-03T13:28:53.61144161Z", app_metadata: {…}, user_metadata: {…}, … }
+App.tsx:88:11
+Sidebar.tsx - isSuperAdmin prop: false 2 Sidebar.tsx:75:11
+App.tsx - user object: 
+Object { id: "3d14ad61-b49a-46d1-be8d-3e791d61da59", aud: "authenticated", role: "authenticated", email: "reimi.starremix@gmail.com", email_confirmed_at: "2025-08-29T07:35:31.49406Z", phone: "", confirmed_at: "2025-08-29T07:35:31.49406Z", last_sign_in_at: "2025-09-03T13:28:53.61144161Z", app_metadata: {…}, user_metadata: {…}, … }
+App.tsx:88:11
+App.tsx - user object: 
+Object { id: "3d14ad61-b49a-46d1-be8d-3e791d61da59", aud: "authenticated", role: "authenticated", email: "reimi.starremix@gmail.com", email_confirmed_at: "2025-08-29T07:35:31.49406Z", phone: "", confirmed_at: "2025-08-29T07:35:31.49406Z", last_sign_in_at: "2025-09-03T13:28:53.61144161Z", app_metadata: {…}, user_metadata: {…}, … }
+App.tsx:88:11
+Sidebar.tsx - isSuperAdmin prop: false 2 Sidebar.tsx:75:11
+App.tsx - user object: 
+Object { id: "3d14ad61-b49a-46d1-be8d-3e791d61da59", aud: "authenticated", role: "authenticated", email: "reimi.starremix@gmail.com", email_confirmed_at: "2025-08-29T07:35:31.49406Z", phone: "", confirmed_at: "2025-08-29T07:35:31.49406Z", last_sign_in_at: "2025-09-03T13:28:53.61144161Z", app_metadata: {…}, user_metadata: {…}, … }
+App.tsx:88:11
+App.tsx - user object: 
+Object { id: "3d14ad61-b49a-46d1-be8d-3e791d61da59", aud: "authenticated", role: "authenticated", email: "reimi.starremix@gmail.com", email_confirmed_at: "2025-08-29T07:35:31.49406Z", phone: "", confirmed_at: "2025-08-29T07:35:31.49406Z", last_sign_in_at: "2025-09-03T13:28:53.61144161Z", app_metadata: {…}, user_metadata: {…}, … }
+App.tsx:88:11
+Sidebar.tsx - isSuperAdmin prop: false 2 Sidebar.tsx:75:11
+App.tsx - user object: 
+Object { id: "3d14ad61-b49a-46d1-be8d-3e791d61da59", aud: "authenticated", role: "authenticated", email: "reimi.starremix@gmail.com", email_confirmed_at: "2025-08-29T07:35:31.49406Z", phone: "", confirmed_at: "2025-08-29T07:35:31.49406Z", last_sign_in_at: "2025-09-03T13:28:53.61144161Z", app_metadata: {…}, user_metadata: {…}, … }
+App.tsx:88:11
+App.tsx - user object: 
+Object { id: "3d14ad61-b49a-46d1-be8d-3e791d61da59", aud: "authenticated", role: "authenticated", email: "reimi.starremix@gmail.com", email_confirmed_at: "2025-08-29T07:35:31.49406Z", phone: "", confirmed_at: "2025-08-29T07:35:31.49406Z", last_sign_in_at: "2025-09-03T13:28:53.61144161Z", app_metadata: {…}, user_metadata: {…}, … }
+App.tsx:88:11
+Sidebar.tsx - isSuperAdmin prop: false 2 Sidebar.tsx:75:11
+App.tsx - user object: 
+Object { id: "3d14ad61-b49a-46d1-be8d-3e791d61da59", aud: "authenticated", role: "authenticated", email: "reimi.starremix@gmail.com", email_confirmed_at: "2025-08-29T07:35:31.49406Z", phone: "", confirmed_at: "2025-08-29T07:35:31.49406Z", last_sign_in_at: "2025-09-03T13:28:53.61144161Z", app_metadata: {…}, user_metadata: {…}, … }
+App.tsx:88:11
+App.tsx - user object: 
+Object { id: "3d14ad61-b49a-46d1-be8d-3e791d61da59", aud: "authenticated", role: "authenticated", email: "reimi.starremix@gmail.com", email_confirmed_at: "2025-08-29T07:35:31.49406Z", phone: "", confirmed_at: "2025-08-29T07:35:31.49406Z", last_sign_in_at: "2025-09-03T13:28:53.61144161Z", app_metadata: {…}, user_metadata: {…}, … }
+App.tsx:88:11
+Sidebar.tsx - isSuperAdmin prop: false 2 Sidebar.tsx:75:11
+App.tsx - user object: 
+Object { id: "3d14ad61-b49a-46d1-be8d-3e791d61da59", aud: "authenticated", role: "authenticated", email: "reimi.starremix@gmail.com", email_confirmed_at: "2025-08-29T07:35:31.49406Z", phone: "", confirmed_at: "2025-08-29T07:35:31.49406Z", last_sign_in_at: "2025-09-03T13:28:53.61144161Z", app_metadata: {…}, user_metadata: {…}, … }
+App.tsx:88:11
+App.tsx - user object: 
+Object { id: "3d14ad61-b49a-46d1-be8d-3e791d61da59", aud: "authenticated", role: "authenticated", email: "reimi.starremix@gmail.com", email_confirmed_at: "2025-08-29T07:35:31.49406Z", phone: "", confirmed_at: "2025-08-29T07:35:31.49406Z", last_sign_in_at: "2025-09-03T13:28:53.61144161Z", app_metadata: {…}, user_metadata: {…}, … }
+App.tsx:88:11
+Sidebar.tsx - isSuperAdmin prop: false 2 Sidebar.tsx:75:11
+App.tsx - user object: 
+Object { id: "3d14ad61-b49a-46d1-be8d-3e791d61da59", aud: "authenticated", role: "authenticated", email: "reimi.starremix@gmail.com", email_confirmed_at: "2025-08-29T07:35:31.49406Z", phone: "", confirmed_at: "2025-08-29T07:35:31.49406Z", last_sign_in_at: "2025-09-03T13:28:53.61144161Z", app_metadata: {…}, user_metadata: {…}, … }
+App.tsx:88:11
+App.tsx - user object: 
+Object { id: "3d14ad61-b49a-46d1-be8d-3e791d61da59", aud: "authenticated", role: "authenticated", email: "reimi.starremix@gmail.com", email_confirmed_at: "2025-08-29T07:35:31.49406Z", phone: "", confirmed_at: "2025-08-29T07:35:31.49406Z", last_sign_in_at: "2025-09-03T13:28:53.61144161Z", app_metadata: {…}, user_metadata: {…}, … }
+App.tsx:88:11
+Sidebar.tsx - isSuperAdmin prop: false 2 Sidebar.tsx:75:11
+App.tsx - user object: 
+Object { id: "3d14ad61-b49a-46d1-be8d-3e791d61da59", aud: "authenticated", role: "authenticated", email: "reimi.starremix@gmail.com", email_confirmed_at: "2025-08-29T07:35:31.49406Z", phone: "", confirmed_at: "2025-08-29T07:35:31.49406Z", last_sign_in_at: "2025-09-03T13:28:53.61144161Z", app_metadata: {…}, user_metadata: {…}, … }
+App.tsx:88:11
+App.tsx - user object: 
+Object { id: "3d14ad61-b49a-46d1-be8d-3e791d61da59", aud: "authenticated", role: "authenticated", email: "reimi.starremix@gmail.com", email_confirmed_at: "2025-08-29T07:35:31.49406Z", phone: "", confirmed_at: "2025-08-29T07:35:31.49406Z", last_sign_in_at: "2025-09-03T13:28:53.61144161Z", app_metadata: {…}, user_metadata: {…}, … }
+App.tsx:88:11
+Sidebar.tsx - isSuperAdmin prop: false 2 Sidebar.tsx:75:11
+App.tsx - user object: 
+Object { id: "3d14ad61-b49a-46d1-be8d-3e791d61da59", aud: "authenticated", role: "authenticated", email: "reimi.starremix@gmail.com", email_confirmed_at: "2025-08-29T07:35:31.49406Z", phone: "", confirmed_at: "2025-08-29T07:35:31.49406Z", last_sign_in_at: "2025-09-03T13:28:53.61144161Z", app_metadata: {…}, user_metadata: {…}, … }
+App.tsx:88:11
+App.tsx - user object: 
+Object { id: "3d14ad61-b49a-46d1-be8d-3e791d61da59", aud: "authenticated", role: "authenticated", email: "reimi.starremix@gmail.com", email_confirmed_at: "2025-08-29T07:35:31.49406Z", phone: "", confirmed_at: "2025-08-29T07:35:31.49406Z", last_sign_in_at: "2025-09-03T13:28:53.61144161Z", app_metadata: {…}, user_metadata: {…}, … }
+App.tsx:88:11
+Sidebar.tsx - isSuperAdmin prop: false 2 Sidebar.tsx:75:11
+App.tsx - user object: 
+Object { id: "3d14ad61-b49a-46d1-be8d-3e791d61da59", aud: "authenticated", role: "authenticated", email: "reimi.starremix@gmail.com", email_confirmed_at: "2025-08-29T07:35:31.49406Z", phone: "", confirmed_at: "2025-08-29T07:35:31.49406Z", last_sign_in_at: "2025-09-03T13:28:53.61144161Z", app_metadata: {…}, user_metadata: {…}, … }
+App.tsx:88:11
+App.tsx - user object: 
+Object { id: "3d14ad61-b49a-46d1-be8d-3e791d61da59", aud: "authenticated", role: "authenticated", email: "reimi.starremix@gmail.com", email_confirmed_at: "2025-08-29T07:35:31.49406Z", phone: "", confirmed_at: "2025-08-29T07:35:31.49406Z", last_sign_in_at: "2025-09-03T13:28:53.61144161Z", app_metadata: {…}, user_metadata: {…}, … }
+App.tsx:88:11
+Sidebar.tsx - isSuperAdmin prop: false 2 Sidebar.tsx:75:11
+App.tsx - user object: 
+Object { id: "3d14ad61-b49a-46d1-be8d-3e791d61da59", aud: "authenticated", role: "authenticated", email: "reimi.starremix@gmail.com", email_confirmed_at: "2025-08-29T07:35:31.49406Z", phone: "", confirmed_at: "2025-08-29T07:35:31.49406Z", last_sign_in_at: "2025-09-03T13:28:53.61144161Z", app_metadata: {…}, user_metadata: {…}, … }
+App.tsx:88:11
+App.tsx - user object: 
+Object { id: "3d14ad61-b49a-46d1-be8d-3e791d61da59", aud: "authenticated", role: "authenticated", email: "reimi.starremix@gmail.com", email_confirmed_at: "2025-08-29T07:35:31.49406Z", phone: "", confirmed_at: "2025-08-29T07:35:31.49406Z", last_sign_in_at: "2025-09-03T13:28:53.61144161Z", app_metadata: {…}, user_metadata: {…}, … }
+App.tsx:88:11
+Sidebar.tsx - isSuperAdmin prop: false 2 Sidebar.tsx:75:11
+App.tsx - user object: 
+Object { id: "3d14ad61-b49a-46d1-be8d-3e791d61da59", aud: "authenticated", role: "authenticated", email: "reimi.starremix@gmail.com", email_confirmed_at: "2025-08-29T07:35:31.49406Z", phone: "", confirmed_at: "2025-08-29T07:35:31.49406Z", last_sign_in_at: "2025-09-03T13:28:53.61144161Z", app_metadata: {…}, user_metadata: {…}, … }
+App.tsx:88:11
+App.tsx - user object: 
+Object { id: "3d14ad61-b49a-46d1-be8d-3e791d61da59", aud: "authenticated", role: "authenticated", email: "reimi.starremix@gmail.com", email_confirmed_at: "2025-08-29T07:35:31.49406Z", phone: "", confirmed_at: "2025-08-29T07:35:31.49406Z", last_sign_in_at: "2025-09-03T13:28:53.61144161Z", app_metadata: {…}, user_metadata: {…}, … }
+App.tsx:88:11
+Sidebar.tsx - isSuperAdmin prop: false 2 Sidebar.tsx:75:11
+App.tsx - user object: 
+Object { id: "3d14ad61-b49a-46d1-be8d-3e791d61da59", aud: "authenticated", role: "authenticated", email: "reimi.starremix@gmail.com", email_confirmed_at: "2025-08-29T07:35:31.49406Z", phone: "", confirmed_at: "2025-08-29T07:35:31.49406Z", last_sign_in_at: "2025-09-03T13:28:53.61144161Z", app_metadata: {…}, user_metadata: {…}, … }
+App.tsx:88:11
+App.tsx - user object: 
+Object { id: "3d14ad61-b49a-46d1-be8d-3e791d61da59", aud: "authenticated", role: "authenticated", email: "reimi.starremix@gmail.com", email_confirmed_at: "2025-08-29T07:35:31.49406Z", phone: "", confirmed_at: "2025-08-29T07:35:31.49406Z", last_sign_in_at: "2025-09-03T13:28:53.61144161Z", app_metadata: {…}, user_metadata: {…}, … }
+App.tsx:88:11
+Sidebar.tsx - isSuperAdmin prop: false 2 Sidebar.tsx:75:11
+App.tsx - user object: 
+Object { id: "3d14ad61-b49a-46d1-be8d-3e791d61da59", aud: "authenticated", role: "authenticated", email: "reimi.starremix@gmail.com", email_confirmed_at: "2025-08-29T07:35:31.49406Z", phone: "", confirmed_at: "2025-08-29T07:35:31.49406Z", last_sign_in_at: "2025-09-03T13:28:53.61144161Z", app_metadata: {…}, user_metadata: {…}, … }
+App.tsx:88:11
+App.tsx - user object: 
+Object { id: "3d14ad61-b49a-46d1-be8d-3e791d61da59", aud: "authenticated", role: "authenticated", email: "reimi.starremix@gmail.com", email_confirmed_at: "2025-08-29T07:35:31.49406Z", phone: "", confirmed_at: "2025-08-29T07:35:31.49406Z", last_sign_in_at: "2025-09-03T13:28:53.61144161Z", app_metadata: {…}, user_metadata: {…}, … }
+App.tsx:88:11
+Sidebar.tsx - isSuperAdmin prop: false 2 Sidebar.tsx:75:11
+App.tsx - user object: 
+Object { id: "3d14ad61-b49a-46d1-be8d-3e791d61da59", aud: "authenticated", role: "authenticated", email: "reimi.starremix@gmail.com", email_confirmed_at: "2025-08-29T07:35:31.49406Z", phone: "", confirmed_at: "2025-08-29T07:35:31.49406Z", last_sign_in_at: "2025-09-03T13:28:53.61144161Z", app_metadata: {…}, user_metadata: {…}, … }
+App.tsx:88:11
+App.tsx - user object: 
+Object { id: "3d14ad61-b49a-46d1-be8d-3e791d61da59", aud: "authenticated", role: "authenticated", email: "reimi.starremix@gmail.com", email_confirmed_at: "2025-08-29T07:35:31.49406Z", phone: "", confirmed_at: "2025-08-29T07:35:31.49406Z", last_sign_in_at: "2025-09-03T13:28:53.61144161Z", app_metadata: {…}, user_metadata: {…}, … }
+App.tsx:88:11
+Sidebar.tsx - isSuperAdmin prop: false 2 Sidebar.tsx:75:11
+App.tsx - user object: 
+Object { id: "3d14ad61-b49a-46d1-be8d-3e791d61da59", aud: "authenticated", role: "authenticated", email: "reimi.starremix@gmail.com", email_confirmed_at: "2025-08-29T07:35:31.49406Z", phone: "", confirmed_at: "2025-08-29T07:35:31.49406Z", last_sign_in_at: "2025-09-03T13:28:53.61144161Z", app_metadata: {…}, user_metadata: {…}, … }
+App.tsx:88:11
+App.tsx - user object: 
+Object { id: "3d14ad61-b49a-46d1-be8d-3e791d61da59", aud: "authenticated", role: "authenticated", email: "reimi.starremix@gmail.com", email_confirmed_at: "2025-08-29T07:35:31.49406Z", phone: "", confirmed_at: "2025-08-29T07:35:31.49406Z", last_sign_in_at: "2025-09-03T13:28:53.61144161Z", app_metadata: {…}, user_metadata: {…}, … }
+App.tsx:88:11
+Sidebar.tsx - isSuperAdmin prop: false 2 Sidebar.tsx:75:11
+App.tsx - Direct fetch data: 
+Object { username: "reimi", display_name: "reimi", is_super_admin: true }
+App.tsx:282:17
+App.tsx - user object: 
+Object { id: "3d14ad61-b49a-46d1-be8d-3e791d61da59", aud: "authenticated", role: "authenticated", email: "reimi.starremix@gmail.com", email_confirmed_at: "2025-08-29T07:35:31.49406Z", phone: "", confirmed_at: "2025-08-29T07:35:31.49406Z", last_sign_in_at: "2025-09-03T13:28:53.61144161Z", app_metadata: {…}, user_metadata: {…}, … }
+App.tsx:88:11
+App.tsx - user object: 
+Object { id: "3d14ad61-b49a-46d1-be8d-3e791d61da59", aud: "authenticated", role: "authenticated", email: "reimi.starremix@gmail.com", email_confirmed_at: "2025-08-29T07:35:31.49406Z", phone: "", confirmed_at: "2025-08-29T07:35:31.49406Z", last_sign_in_at: "2025-09-03T13:28:53.61144161Z", app_metadata: {…}, user_metadata: {…}, … }
+App.tsx:88:11
+Sidebar.tsx - isSuperAdmin prop: false 2 Sidebar.tsx:75:11
+App.tsx - user object: 
+Object { id: "3d14ad61-b49a-46d1-be8d-3e791d61da59", aud: "authenticated", role: "authenticated", email: "reimi.starremix@gmail.com", email_confirmed_at: "2025-08-29T07:35:31.49406Z", phone: "", confirmed_at: "2025-08-29T07:35:31.49406Z", last_sign_in_at: "2025-09-03T13:28:53.61144161Z", app_metadata: {…}, user_metadata: {…}, … }
+App.tsx:88:11
+App.tsx - user object: 
+Object { id: "3d14ad61-b49a-46d1-be8d-3e791d61da59", aud: "authenticated", role: "authenticated", email: "reimi.starremix@gmail.com", email_confirmed_at: "2025-08-29T07:35:31.49406Z", phone: "", confirmed_at: "2025-08-29T07:35:31.49406Z", last_sign_in_at: "2025-09-03T13:28:53.61144161Z", app_metadata: {…}, user_metadata: {…}, … }
+App.tsx:88:11
+Sidebar.tsx - isSuperAdmin prop: true 2 Sidebar.tsx:75:11
+DEBUG: Directly set followersCount to 2 and followingCount to 9 App.tsx:305:15
+App.tsx - userProfile.is_super_admin in useEffect: true App.tsx:325:15
+App.tsx - user object: 
+Object { id: "3d14ad61-b49a-46d1-be8d-3e791d61da59", aud: "authenticated", role: "authenticated", email: "reimi.starremix@gmail.com", email_confirmed_at: "2025-08-29T07:35:31.49406Z", phone: "", confirmed_at: "2025-08-29T07:35:31.49406Z", last_sign_in_at: "2025-09-03T13:28:53.61144161Z", app_metadata: {…}, user_metadata: {…}, … }
+App.tsx:88:11
+App.tsx - user object: 
+Object { id: "3d14ad61-b49a-46d1-be8d-3e791d61da59", aud: "authenticated", role: "authenticated", email: "reimi.starremix@gmail.com", email_confirmed_at: "2025-08-29T07:35:31.49406Z", phone: "", confirmed_at: "2025-08-29T07:35:31.49406Z", last_sign_in_at: "2025-09-03T13:28:53.61144161Z", app_metadata: {…}, user_metadata: {…}, … }
+App.tsx:88:11
+Sidebar.tsx - isSuperAdmin prop: true 2 Sidebar.tsx:75:11
+App.tsx - user object: 
+Object { id: "3d14ad61-b49a-46d1-be8d-3e791d61da59", aud: "authenticated", role: "authenticated", email: "reimi.starremix@gmail.com", email_confirmed_at: "2025-08-29T07:35:31.49406Z", phone: "", confirmed_at: "2025-08-29T07:35:31.49406Z", last_sign_in_at: "2025-09-03T13:28:53.61144161Z", app_metadata: {…}, user_metadata: {…}, … }
+App.tsx:88:11
+App.tsx - user object: 
+Object { id: "3d14ad61-b49a-46d1-be8d-3e791d61da59", aud: "authenticated", role: "authenticated", email: "reimi.starremix@gmail.com", email_confirmed_at: "2025-08-29T07:35:31.49406Z", phone: "", confirmed_at: "2025-08-29T07:35:31.49406Z", last_sign_in_at: "2025-09-03T13:28:53.61144161Z", app_metadata: {…}, user_metadata: {…}, … }
+App.tsx:88:11
+Sidebar.tsx - isSuperAdmin prop: true 2 Sidebar.tsx:75:11
+Cookie “__cf_bm” は不正なドメインのため拒否されています。 websocket
+Sidebar.tsx - isSuperAdmin prop: true 2 Sidebar.tsx:75:11
+App.tsx - Direct fetch data: 
+Object { username: "reimi", display_name: "reimi", is_super_admin: true }
+App.tsx:282:17
+App.tsx - Direct fetch data: 
+Object { username: "reimi", display_name: "reimi", is_super_admin: true }
+App.tsx:282:17
+App.tsx - user object: 
+Object { id: "3d14ad61-b49a-46d1-be8d-3e791d61da59", aud: "authenticated", role: "authenticated", email: "reimi.starremix@gmail.com", email_confirmed_at: "2025-08-29T07:35:31.49406Z", phone: "", confirmed_at: "2025-08-29T07:35:31.49406Z", last_sign_in_at: "2025-09-03T13:28:53.61144161Z", app_metadata: {…}, user_metadata: {…}, … }
+App.tsx:88:11
+App.tsx - user object: 
+Object { id: "3d14ad61-b49a-46d1-be8d-3e791d61da59", aud: "authenticated", role: "authenticated", email: "reimi.starremix@gmail.com", email_confirmed_at: "2025-08-29T07:35:31.49406Z", phone: "", confirmed_at: "2025-08-29T07:35:31.49406Z", last_sign_in_at: "2025-09-03T13:28:53.61144161Z", app_metadata: {…}, user_metadata: {…}, … }
+App.tsx:88:11
+Sidebar.tsx - isSuperAdmin prop: true 2 Sidebar.tsx:75:11
+App.tsx - userProfile.is_super_admin in useEffect: true App.tsx:325:15
+App.tsx - user object: 
+Object { id: "3d14ad61-b49a-46d1-be8d-3e791d61da59", aud: "authenticated", role: "authenticated", email: "reimi.starremix@gmail.com", email_confirmed_at: "2025-08-29T07:35:31.49406Z", phone: "", confirmed_at: "2025-08-29T07:35:31.49406Z", last_sign_in_at: "2025-09-03T13:28:53.61144161Z", app_metadata: {…}, user_metadata: {…}, … }
+App.tsx:88:11
+App.tsx - user object: 
+Object { id: "3d14ad61-b49a-46d1-be8d-3e791d61da59", aud: "authenticated", role: "authenticated", email: "reimi.starremix@gmail.com", email_confirmed_at: "2025-08-29T07:35:31.49406Z", phone: "", confirmed_at: "2025-08-29T07:35:31.49406Z", last_sign_in_at: "2025-09-03T13:28:53.61144161Z", app_metadata: {…}, user_metadata: {…}, … }
+App.tsx:88:11
+Sidebar.tsx - isSuperAdmin prop: true 4 Sidebar.tsx:75:11
+App.tsx - user object: 
+Object { id: "3d14ad61-b49a-46d1-be8d-3e791d61da59", aud: "authenticated", role: "authenticated", email: "reimi.starremix@gmail.com", email_confirmed_at: "2025-08-29T07:35:31.49406Z", phone: "", confirmed_at: "2025-08-29T07:35:31.49406Z", last_sign_in_at: "2025-09-03T13:28:53.61144161Z", app_metadata: {…}, user_metadata: {…}, … }
+App.tsx:88:11
+App.tsx - user object: 
+Object { id: "3d14ad61-b49a-46d1-be8d-3e791d61da59", aud: "authenticated", role: "authenticated", email: "reimi.starremix@gmail.com", email_confirmed_at: "2025-08-29T07:35:31.49406Z", phone: "", confirmed_at: "2025-08-29T07:35:31.49406Z", last_sign_in_at: "2025-09-03T13:28:53.61144161Z", app_metadata: {…}, user_metadata: {…}, … }
+App.tsx:88:11
+Sidebar.tsx - isSuperAdmin prop: true 2 Sidebar.tsx:75:11
+App.tsx - user object: 
+Object { id: "3d14ad61-b49a-46d1-be8d-3e791d61da59", aud: "authenticated", role: "authenticated", email: "reimi.starremix@gmail.com", email_confirmed_at: "2025-08-29T07:35:31.49406Z", phone: "", confirmed_at: "2025-08-29T07:35:31.49406Z", last_sign_in_at: "2025-09-03T13:28:53.61144161Z", app_metadata: {…}, user_metadata: {…}, … }
+App.tsx:88:11
+App.tsx - user object: 
+Object { id: "3d14ad61-b49a-46d1-be8d-3e791d61da59", aud: "authenticated", role: "authenticated", email: "reimi.starremix@gmail.com", email_confirmed_at: "2025-08-29T07:35:31.49406Z", phone: "", confirmed_at: "2025-08-29T07:35:31.49406Z", last_sign_in_at: "2025-09-03T13:28:53.61144161Z", app_metadata: {…}, user_metadata: {…}, … }
+App.tsx:88:11
+Sidebar.tsx - isSuperAdmin prop: true 2 Sidebar.tsx:75:11
+Failed to fetch Netlify usage. Status: 500 Body: {"error":"Netlify API key or account slug not configured."} 2 MonitoringView.tsx:36:19
