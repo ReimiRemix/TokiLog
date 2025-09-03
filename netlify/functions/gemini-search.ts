@@ -1,5 +1,4 @@
-
-import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
+const { GoogleGenAI, GenerateContentResponse } = require("@google/genai");
 import type { RestaurantDetails, SearchQuery, Source } from '../../types';
 import type { Handler, HandlerEvent, HandlerContext } from "@netlify/functions";
 
@@ -22,7 +21,7 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
         return { statusCode: 400, body: JSON.stringify({ error: '都道府県は必須です。' }) };
     }
 
-    const ai = new GoogleGenAI(API_KEY);
+    const ai = new GoogleGenAI({ apiKey: API_KEY });
 
     const fullQuery = `${query.prefecture} ${query.city || ''} ${query.storeName || ''}`.trim();
     console.log("Gemini Search - Full query for prompt:", fullQuery);
@@ -35,7 +34,9 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
 2.  **厳格なエリア制約**: 検索エリアは「${query.prefecture} ${query.city || ''}」です。このエリア外のレストランは、たとえ名前が一致していても完全に無視し、結果に含めてはなりません。
 3.  **正確な情報抽出**: 検索結果から、レストランの「名前」「住所」「緯度」「経度」「都道府県」「市区町村」「公式サイトのURL」を抽出し、指定されたJSONスキーマ通りに出力してください。緯度・経度が不明な場合はnullではなく、0を設定してください。
 4.  **JSON出力の徹底**: あなたの回答は、指定されたJSONスキーマに準拠したJSONオブジェクトのみでなければなりません。説明や他のテキストは一切含めないでください。
-5.  **結果がない場合**: 条件に合うレストランが見つからなかった場合は、必ずdetailsを空の配列 `[]` として返してください。
+5.  **結果がない場合**: 条件に合うレストランが見つからなかった場合は、必ずdetailsを空の配列 
+[]
+ として返してください。
 
 # 実行クエリ
 「${fullQuery} レストラン」
@@ -77,7 +78,7 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
         required: ["details", "sources"]
     };
 
-    const model = ai.getGenerativeModel({ 
+    const model = ai.getGenerativeModel({
         model: "gemini-1.5-flash",
         generationConfig: {
             responseMimeType: "application/json",

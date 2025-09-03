@@ -1,7 +1,6 @@
-
 import type { Handler, HandlerEvent } from "@netlify/functions";
 import type { HotpepperRestaurant, SearchQuery } from "../../types";
-import { GoogleGenAI } from "@google/genai";
+const { GoogleGenAI } = require("@google/genai");
 
 const handler: Handler = async (event: HandlerEvent) => {
   if (event.httpMethod !== 'POST') {
@@ -48,37 +47,29 @@ const handler: Handler = async (event: HandlerEvent) => {
     let response = await fetch(url);
     let data = await response.json();
 
-    // If condition is too broad, try to optimize with AI
     if (data.results.error && data.results.error[0]?.code === 3000) {
         console.log("Hotpepper API error 3000: Condition too broad. Attempting AI optimization.");
         const GEMINI_API_KEY = process.env.API_KEY;
         if (GEMINI_API_KEY) {
             try {
-                const ai = new GoogleGenAI(GEMINI_API_KEY);
+                const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
                 const model = ai.getGenerativeModel({ model: "gemini-pro" });
 
-                const prompt = `
-あなたはホットペッパーAPIの検索エキスパートです。
-以下の検索クエリで「検索範囲が広すぎる」というエラーが発生しました。
-このエラーを回避し、ユーザーの意図を汲んだ上で、より具体的な検索条件をJSON形式で提案してください。
-
-# 元の検索クエリ
-${JSON.stringify(query, null, 2)}
-
-# 提案のルール
-- `small_area_code`が指定されていない場合、`prefecture_code` (${query.prefecture_code}) に関連する人気のエリアや中心的なエリアの`small_area_code`を1つ提案してください。
-- `keyword`が「レストラン」のような一般的な単語の場合は、より具体的なジャンルや料理名を`keyword`として提案してください。（例：「イタリアン」「ラーメン」など）
-- `genre`を追加または変更することも有効です。
-- 回答はJSONオブジェクトのみとし、説明やマークダウンは含めないでください。
-- 元のクエリに含まれる`prefecture`, `prefecture_code`, `storeName`は変更しないでください。
-
-# 出力形式 (JSON)
-{
-  "small_area_code": "<提案する小エリアコード>",
-  "genre": "<提案するジャンルコード>",
-  "keyword": "<提案するキーワード>"
-}
-`;
+                const prompt = [
+                    'あなたはホットペッパーAPIの検索エキスパートです。',
+                    '以下の検索クエリで「検索範囲が広すぎる」というエラーが発生しました。',
+                    'このエラーを回避し、ユーザーの意図を汲んだ上で、より具体的な検索条件をJSON形式で提案してください。',
+                    '\n# 元の検索クエリ',
+                    JSON.stringify(query, null, 2),
+                    '\n# 提案のルール',
+                    '- `small_area_code`が指定されていない場合、`prefecture_code` (' + query.prefecture_code + ') に関連する人気のエリアや中心的なエリアの`small_area_code`を1つ提案してください。',
+                    '- `keyword`が「レストラン」のような一般的な単語の場合は、より具体的なジャンルや料理名を`keyword`として提案してください。（例：「イタリアン」「ラーメン」など）',
+                    '- `genre`を追加または変更することも有効です。',
+                    '- 回答はJSONオブジェクトのみとし、説明やマークダウンは含めないでください。',
+                    '- 元のクエリに含まれる`prefecture`, `prefecture_code`, `storeName`は変更しないでください。',
+                    '\n# 出力形式 (JSON)',
+                    '{\n  "small_area_code": "<提案する小エリアコード>",\n  "genre": "<提案するジャンルコード>",\n  "keyword": "<提案するキーワード>"\n}'
+                ].join('\n');
 
                 const result = await model.generateContent(prompt);
                 const aiResponse = await result.response;
@@ -97,7 +88,6 @@ ${JSON.stringify(query, null, 2)}
 
             } catch (e) {
                 console.error("AI optimization failed:", e);
-                // If AI optimization fails, return the original error to the user
                 return {
                     statusCode: 400,
                     body: JSON.stringify({ error: "検索範囲が広すぎます。AIによる条件絞り込みにも失敗しました。エリアやキーワードをより具体的に指定してください。" }),

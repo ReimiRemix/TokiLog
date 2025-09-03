@@ -43,6 +43,7 @@ export interface RestaurantDetails {
 
 export interface SearchQuery {
   prefecture: string;
+  prefecture_code?: string;
   large_area_code?: string;
   city?: string;
   small_area_code?: string;
