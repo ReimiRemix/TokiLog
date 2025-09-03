@@ -20,8 +20,6 @@ const MonitoringView: React.FC = () => {
         if (supabaseResponse.ok) {
           const supabaseData = await supabaseResponse.json();
           setSupabaseUsage(supabaseData);
-        } else {
-          console.error('Failed to fetch Supabase usage:', await supabaseResponse.text());
         }
 
         if (geminiResponse.ok) {

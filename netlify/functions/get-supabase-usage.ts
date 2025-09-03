@@ -1,51 +1,40 @@
 import type { Handler } from "@netlify/functions";
+import { createClient } from "@supabase/supabase-js";
 
 const handler: Handler = async (event, context) => {
-  console.log("get-supabase-usage function invoked.");
-  const SUPABASE_ACCESS_TOKEN = process.env.SUPABASE_ACCESS_TOKEN;
-  const PROJECT_ID = process.env.SUPABASE_PROJECT_ID;
+  const { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } = process.env;
 
-  if (!SUPABASE_ACCESS_TOKEN || !PROJECT_ID) {
-    console.error("Supabase access token or project ID not configured.");
-    console.log(`SUPABASE_ACCESS_TOKEN present: ${!!SUPABASE_ACCESS_TOKEN}`);
-    console.log(`SUPABASE_PROJECT_ID present: ${!!PROJECT_ID}`);
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: "Supabase access token or project ID not configured." }),
+      body: JSON.stringify({ error: "Supabase URL or Service Role Key not configured." }),
     };
   }
 
-  const url = `https://api.supabase.com/v1/projects/${PROJECT_ID}/usage`;
-  console.log("Requesting Supabase URL:", url);
+  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
   try {
-    const response = await fetch(url, {
-      headers: {
-        "Authorization": `Bearer ${SUPABASE_ACCESS_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-    });
+    // SQL to get the total size of the current database
+    const { data, error } = await supabase.rpc('get_db_size');
 
-    console.log(`Supabase API response status: ${response.status}`);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Failed to fetch Supabase usage data. Details:", errorText);
+    if (error) {
+      // Before running this, you need to create the function in Supabase SQL editor:
+      // CREATE OR REPLACE FUNCTION get_db_size() RETURNS BIGINT AS $$
+      //   SELECT pg_database_size(current_database());
+      // $$ LANGUAGE sql STABLE;
+      console.error("Error fetching DB size:", error);
       return {
-        statusCode: response.status,
-        body: JSON.stringify({ error: "Failed to fetch Supabase usage.", details: errorText }),
+        statusCode: 500,
+        body: JSON.stringify({ error: 'Failed to execute SQL query.', details: error.message }),
       };
     }
 
-    const data = await response.json();
-    console.log("Successfully fetched Supabase usage data:", data);
-
     return {
       statusCode: 200,
-      body: JSON.stringify(data),
+      body: JSON.stringify({ db_size: data }), // The RPC call returns the size directly
     };
+
   } catch (error: any) {
-    console.error("An error occurred in get-supabase-usage:", error);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: error.message || "Internal server error." }),
