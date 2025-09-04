@@ -132,54 +132,17 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
 「${fullQuery}」
 `;
 
-    const responseSchema: Schema = {
-      type: SchemaType.OBJECT,
-      properties: {
-        details: {
-          type: SchemaType.ARRAY,
-          description: "検索結果のレストランリスト",
-          items: {
-            type: SchemaType.OBJECT,
-            properties: {
-              name: { type: SchemaType.STRING, description: "レストラン名" },
-              address: { type: SchemaType.STRING, description: "住所" },
-              hours: { type: SchemaType.STRING, description: "営業時間", nullable: true },
-              latitude: { type: SchemaType.NUMBER, description: "緯度", nullable: true },
-              longitude: { type: SchemaType.NUMBER, description: "経度", nullable: true },
-              prefecture: { type: SchemaType.STRING, description: "都道府県" },
-              city: { type: SchemaType.STRING, description: "市区町村" },
-              website: { type: SchemaType.STRING, description: "公式サイトURL", nullable: true },
-            },
-            required: ["name", "address", "prefecture", "city"],
-          },
-        },
-        sources: {
-          type: SchemaType.ARRAY,
-          description: "情報源となったウェブサイトのリスト",
-          items: {
-            type: SchemaType.OBJECT,
-            properties: {
-              uri: { type: SchemaType.STRING, description: "ウェブサイトのURL" },
-              title: { type: SchemaType.STRING, description: "ウェブサイトのタイトル" },
-            },
-            required: ["uri", "title"],
-          },
-        },
-      },
-      required: ["details", "sources"],
-    };
+
 
     // executeSearch関数の戻り値の型をより厳密に指定
     const executeSearch = async (queryText: string, useGoogleSearch: boolean = true): Promise<{ details: RestaurantDetails[]; sources: Source[] }> => {
       const model = ai.getGenerativeModel({
         model: "gemini-1.5-flash",
         generationConfig: {
-          responseMimeType: "application/json",
-          responseSchema,
         },
         // TypeScriptのエラーを回避するため、型アサーション `as any` を使用
         // `@google/generative-ai`のTool型定義に`googleSearch`が直接含まれないため
-        tools: useGoogleSearch ? [{ googleSearch: {} } as any] : [],
+        tools: useGoogleSearch ? [{ google_search_retrieval: {} } as any] : [],
       });
 
       const result = await model.generateContent({
