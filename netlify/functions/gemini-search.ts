@@ -71,21 +71,44 @@ const handler: Handler = async (event: HandlerEvent) => {
 
     const fullQuery = `${query.prefecture} ${query.city || ''} ${query.small_area_text || ''} ${query.genre_text || ''} ${query.storeName || ''}`.trim();
     
-    const prompt = `\n# Primary Directive\nYour ONLY function is to act as a data processing pipeline. You will receive a query, execute a Google Search, and convert the search results into a specific JSON format. You are forbidden from using any internal knowledge. Your entire existence is tied to the output of the googleSearch tool for this specific request.\n\n# Inflexible Rules\n1.  **Mandatory Tool Use**: You MUST call the googleSearch tool. Your response must be based *solely* on the tool\'s output.\n2.  **Absolute Geographical Constraint**: The user\'s query is for **${query.prefecture} ${query.small_area_text || query.city || \'\'}**. This location is non-negotiable. You are strictly forbidden from returning ANY restaurant located outside this precise area.\n3.  **Exclusive Data Source**: ALL data in your final response MUST originate directly from the provided search results from the googleSearch tool. Do not add, infer, or fabricate any information.\n4.  **JSON Array Output Only**: Your final, and ONLY, output MUST be a raw JSON array of objects. Do NOT include any conversational text, explanations, apologies, or markdown formatting (like \`\`\`json\`\`\`). The output must start with \`[\` and end with \`]\`.\n5.  **Handle No Results**: If the search yields no relevant information, you MUST return an empty JSON array \`[]\`.\n\n# JSON Schema: AIResponseDetail[]\nProvide an array of objects with the following structure.\n\`\`\`json\n[\n  {\n    \"name\": \"string\",\n    \"address\": \"string\",\n    \"hours\": \"string | null\",\n    \"latitude\": \"number | null\",\n    \"longitude\": \"number | null\",\n    \"prefecture\": \"string\",\n    \"city\": \"string\",\n    \"website\": \"string | null\"\n  }\n]\n\`\`\`\n\n# Final Instruction\nBased *exclusively* on the search results for \"${fullQuery}\", and adhering to the strict location filter, generate the JSON array.\n`;
+    const prompt = `
+# Primary Directive
+Your ONLY function is to act as a data processing pipeline. You will receive a query and convert the results into a specific JSON format. Your entire existence is tied to processing this specific request.
+
+# Inflexible Rules
+1. **Absolute Geographical Constraint**: The user's query is for **${query.prefecture} ${query.small_area_text || query.city || ''}**. This location is non-negotiable. You are strictly forbidden from returning ANY restaurant located outside this precise area.
+2. **Exclusive Data Source**: ALL data in your final response MUST originate directly from the provided information. Do not add, infer, or fabricate any information.
+3. **JSON Array Output Only**: Your final, and ONLY, output MUST be a raw JSON array of objects. Do NOT include any conversational text, explanations, apologies, or markdown formatting (like \`\`\`json\`\`\`). The output must start with "[" and end with "]".
+4. **Handle No Results**: If no relevant information is found, you MUST return an empty JSON array "[]".
+
+# JSON Schema: AIResponseDetail[]
+Provide an array of objects with the following structure:
+[
+  {
+    "name": "string",
+    "address": "string",
+    "hours": "string",
+    "latitude": "number",
+    "longitude": "number",
+    "prefecture": "string",
+    "city": "string",
+    "website": "string | null"
+  }
+]
+
+# Final Instruction
+Based on the query "${fullQuery}", and adhering to the strict location filter, generate the JSON array.
+`;
 
     const result = await model.generateContent({
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      tools: [{ googleSearch: {} }],
     });
 
     const response = result.response;
-    const groundingMetadata = response.candidates?.[0]?.groundingMetadata;
-    const sources: Source[] = (groundingMetadata?.web?.searchQueries || [])
-      .map((sq: any) => ({ uri: sq.uri, title: sq.title }))
-      .filter((s: Source) => s.uri && s.title);
+    // Since groundingMetadata.web is not supported, return empty sources
+    const sources: Source[] = [];
 
     let text = response.text();
-
     const jsonText = extractJsonArray(text);
     let details: AIResponseDetail[] = [];
     try {
@@ -101,7 +124,9 @@ const handler: Handler = async (event: HandlerEvent) => {
       ...d,
       id: `${d.name}-${d.address}`, // Create a semi-unique ID
       isFromHotpepper: false,
-      // Ensure required fields for HotpepperRestaurant are handled if needed, but this is for GeminiRestaurant
+      hours: d.hours ?? "", // Provide default empty string for hours
+      latitude: d.latitude ?? 0, // Provide default 0 for latitude
+      longitude: d.longitude ?? 0, // Provide default 0 for longitude
     }));
 
     return {
