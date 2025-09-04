@@ -51,6 +51,7 @@ function extractJsonArray(text: string): string | null {
 }
 
 const handler: Handler = async (event: HandlerEvent) => {
+  console.log("Gemini Search function started.");
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method Not Allowed' }) };
   }
