@@ -717,6 +717,14 @@ const App: React.FC = () => {
   }, [theme]);
 
   useEffect(() => {
+    // If the view changes to anything other than 'search', reset search-related state
+    if (view !== 'search') {
+      setHotpepperResults([]);
+      setGeminiResults([]);
+      setCurrentSearchQuery(null);
+      setSearchError(null);
+      setHotpepperPage(1);
+    }
     // If the view changes to anything other than 'followed', deselect any followed user
     if (view !== 'followed') {
       setSelectedFollowedUserId(null);
