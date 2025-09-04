@@ -1,29 +1,20 @@
 {
   "compilerOptions": {
     "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2022", "DOM"],
+    "skipLibCheck": true,
+    "types": ["node", "@google/generative-ai"], // "@google/genai" を "@google/generative-ai" に変更
+    "outDir": "./dist",
+    "rootDir": "./",
+    "strict": true,
+    "esModuleInterop": true,
     "experimentalDecorators": true,
     "useDefineForClassFields": false,
-    "module": "ESNext",
-    "lib": [
-      "ES2022",
-      "DOM",
-      "DOM.Iterable"
-    ],
-    "skipLibCheck": true,
-    "types": [
-      "node"
-    ],
-    "moduleResolution": "bundler",
-    "isolatedModules": true,
-    "moduleDetection": "force",
     "allowJs": true,
-    "jsx": "react-jsx",
-    "paths": {
-      "@/*": [
-        "./*"
-      ]
-    },
-    "allowImportingTsExtensions": true,
-    "noEmit": true
-  }
+    "noEmit": false
+  },
+  "include": ["netlify/functions/**/*", "types/**/*"],
+  "exclude": ["node_modules", "dist"]
 }

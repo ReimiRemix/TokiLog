@@ -1,5 +1,4 @@
-
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI, Schema, SchemaType } from "@google/generative-ai";
 import type { Handler, HandlerEvent } from "@netlify/functions";
 import type { Restaurant, ChatMessage } from "../../types";
 
@@ -19,7 +18,7 @@ const handler: Handler = async (event: HandlerEvent) => {
       return { statusCode: 400, body: JSON.stringify({ error: '質問とレストランリストは必須です。' }) };
     }
 
-    const ai = new GoogleGenAI({ apiKey: API_KEY });
+    const ai = new GoogleGenerativeAI(API_KEY);
 
     // To save tokens, we only send essential information to the model
     const simplifiedRestaurants = restaurants.map(r => ({
@@ -54,44 +53,47 @@ ${JSON.stringify(simplifiedRestaurants, null, 2)}
 - レストランリストの中から、質問の意図に最も沿ったお店を選んでください。（例：「おしゃれ」という言葉があればジャンルやユーザーコメントから推測する、「団体」という言葉があれば居酒屋などを優先するなど）
 - 過去の会話の流れを考慮し、文脈に合った回答をしてください。
 - なぜそのお店を推薦するのか、具体的な理由を「genres」や「userComment」の内容を引用しながら説明してください。
-- 推薦するお店が見つからない場合は、recommendationsを空の配列 \\\`[]\\\` にし、summaryでその旨を伝えてください。
+- 推薦するお店が見つからない場合は、recommendationsを空の配列 \
+[]\
+ にし、summaryでその旨を伝えてください。
 - 必ず指定されたJSONスキーマに従って回答してください。回答はJSONオブジェクトそのものである必要があります。
 `;
 
-    const responseSchema = {
-      type: 'OBJECT',
+    const responseSchema: Schema = {
+      type: SchemaType.OBJECT,
       properties: {
         recommendations: {
-          type: 'ARRAY',
+          type: SchemaType.ARRAY,
           description: "推薦するレストランのリスト",
           items: {
-            type: 'OBJECT',
+            type: SchemaType.OBJECT,
             properties: {
-              id: { type: 'STRING', description: "レストランの一意のID" },
-              name: { type: 'STRING', description: "レストラン名" },
-              reason: { type: 'STRING', description: "このレストランを推薦する具体的な理由" },
+              id: { type: SchemaType.STRING, description: "レストランの一意のID" },
+              name: { type: SchemaType.STRING, description: "レストラン名" },
+              reason: { type: SchemaType.STRING, description: "このレストランを推薦する具体的な理由" },
             },
             required: ["id", "name", "reason"],
           },
         },
         summary: {
-          type: 'STRING',
+          type: SchemaType.STRING,
           description: "推薦全体に関する総括的なコメント。推薦したお店についても触れる。",
         },
       },
       required: ["recommendations", "summary"],
     };
 
-    const response = await ai.models.generateContent({
+    const model = ai.getGenerativeModel({
       model: "gemini-2.5-flash",
-      contents: prompt,
-      config: {
+      generationConfig: {
         responseMimeType: "application/json",
         responseSchema,
       },
     });
+    const result = await model.generateContent(prompt);
+    const response = result.response;
 
-    const jsonText = response.text.trim();
+    const jsonText = response.text();
     
     // The model should return a valid JSON object string based on the schema.
     // We pass it directly to the client.

@@ -1,5 +1,4 @@
-
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import type { Handler, HandlerEvent } from "@netlify/functions";
 import type { HotpepperRestaurant } from "../../types";
 
@@ -19,7 +18,7 @@ const handler: Handler = async (event: HandlerEvent) => {
         return { statusCode: 400, body: JSON.stringify({ error: '店舗情報が不足しています。' }) };
     }
 
-    const ai = new GoogleGenAI({ apiKey: API_KEY });
+    const ai = new GoogleGenerativeAI(API_KEY);
 
     const prompt = `
 あなたはプロのグルメレポーターです。以下の情報を持つ飲食店について、ユーザーが「行ってみたい！」と思うような、簡潔で魅力的な紹介文を作成してください。
@@ -37,12 +36,11 @@ const handler: Handler = async (event: HandlerEvent) => {
 - 回答は紹介文のみとし、他の余計な言葉は含めないでください。
 `;
 
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: prompt,
-    });
+    const model = ai.getGenerativeModel({ model: "gemini-2.5-flash"});
+    const result = await model.generateContent(prompt);
+    const response = result.response;
 
-    const comment = response.text.trim();
+    const comment = response.text();
     
     return {
       statusCode: 200,
