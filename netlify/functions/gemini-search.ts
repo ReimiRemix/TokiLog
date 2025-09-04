@@ -1,149 +1,159 @@
-import { GoogleGenerativeAI, Schema, Part, SchemaType } from "@google/generative-ai";
-import type { Handler, HandlerEvent, HandlerContext } from "@netlify/functions";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import type { SearchResult, SearchQuery, Source } from '../../types';
+import type { Handler, HandlerEvent } from "@netlify/functions";
 
-interface RestaurantDetails {
+// This is the expected structure from the AI's JSON output
+interface AIResponseDetail {
   name: string;
   address: string;
-  latitude?: number;
-  longitude?: number;
+  hours?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
   prefecture: string;
   city: string;
-  website?: string;
+  website?: string | null;
 }
 
-interface Source {
-  uri: string;
-  title: string;
+/**
+ * Extracts a balanced JSON array from a string.
+ */
+function extractJsonArray(text: string): string | null {
+  const startIndex = text.indexOf('[');
+  if (startIndex === -1) return null;
+
+  let depth = 1;
+  let inString = false;
+  let isEscaped = false;
+  
+  for (let i = startIndex + 1; i < text.length; i++) {
+    const char = text[i];
+    
+    if (isEscaped) {
+      isEscaped = false;
+      continue;
+    }
+    if (char === '\\') {
+      isEscaped = true;
+      continue;
+    }
+    if (char === '"') {
+      inString = !inString;
+    }
+    if (!inString) {
+      if (char === '[') depth++;
+      else if (char === ']') {
+        depth--;
+        if (depth === 0) return text.substring(startIndex, i + 1);
+      }
+    }
+  }
+  return null; // Unbalanced
 }
 
-interface SearchQuery {
-  prefecture: string;
-  city?: string;
-  small_area_text?: string;
-  genre_text?: string;
-  storeName?: string;
-}
-
-const handler: Handler = async (event: HandlerEvent, context: HandlerContext) => {
-  if (event.httpMethod !== "POST") {
-    return { statusCode: 405, body: JSON.stringify({ error: "Method Not Allowed" }) };
+const handler: Handler = async (event: HandlerEvent) => {
+  if (event.httpMethod !== 'POST') {
+    return { statusCode: 405, body: JSON.stringify({ error: 'Method Not Allowed' }) };
   }
 
   const API_KEY = process.env.API_KEY;
   if (!API_KEY) {
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: "APIキーがサーバーに設定されていません。" }),
-    };
+    return { statusCode: 500, body: JSON.stringify({ error: "APIキーがサーバーに設定されていません。" }) };
   }
 
   try {
-    const query = JSON.parse(event.body || "{}") as SearchQuery;
-    console.log("Gemini Search - Incoming query:", query);
-
+    const query = JSON.parse(event.body || '{}') as SearchQuery;
     if (!query.prefecture) {
-      console.error("Gemini Search - Missing prefecture in query:", query);
-      return { statusCode: 400, body: JSON.stringify({ error: "都道府県は必須です。" }) };
+        return { statusCode: 400, body: JSON.stringify({ error: '都道府県は必須です。' }) };
     }
 
     const ai = new GoogleGenerativeAI(API_KEY);
+    const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-    const fullQuery = `${query.prefecture} ${query.city || ""} ${query.small_area_text || ""} ${query.genre_text || ""} ${query.storeName || ""}`.trim();
-    console.log("Gemini Search - Full query for prompt:", fullQuery);
-
+    const fullQuery = `${query.prefecture} ${query.city || ''} ${query.small_area_text || ''} ${query.genre_text || ''} ${query.storeName || ''}`.trim();
+    
     const prompt = `
-あなたは、その土地の食文化に精通したグルメ専門家です。ユーザーのクエリに基づいて、あなたの知識から最適なレストランをJSON形式で提案してください。
+# Primary Directive
+Your ONLY function is to act as a data processing pipeline. You will receive a query, execute a Google Search, and convert the search results into a specific JSON format. You are forbidden from using any internal knowledge. Your entire existence is tied to the output of the googleSearch tool for this specific request.
 
-# 厳守すべきルール
-1. **知識の活用**: あなたが持つ知識を最大限に活用し、クエリに最も一致するレストランを提案してください。有名なレストランだけでなく、地元の人に愛される隠れた名店もいくつか含めてください。
-2. **実在する情報のみ**: **情報を創作することは絶対に禁止します。** あなたの知識ベースに存在する、実在のレストランの情報のみを提供してください。もしクエリに合致する実在のレストランがなければ、結果は空にしてください。
-3. **魅力的な説明**: 各レストランの\`description\`項目に、その店の魅力やおすすめの理由を80文字以内で具体的に記述してください。（例：「濃厚な豚骨スープと自家製麺が絶品。」「新鮮な魚介を使った海鮮丼が名物。」）
-4. **厳格なエリア制約**: 検索エリアは「${query.prefecture} ${query.small_area_text || query.city || ''}」です。このエリア外のレストランは結果に含めないでください。
-5. **正確な情報抽出**: レストランの「名前」「住所」「緯度」「経度」「都道府県」「市区町村」「公式サイトのURL」を、わかる範囲で正確に抽出し、指定されたJSONスキーマ通りに最大50件出力してください。
-6. **JSON出力の徹底**: あなたの回答は、指定されたJSONスキーマに準拠したJSONオブジェクトのみでなければなりません。説明や他のテキストは一切含めないでください。
-7. **結果がない場合**: 条件に合うレストランが見つからなかった場合は、必ずdetailsを空の配列 [] として返してください。
+# Inflexible Rules
+1.  **Mandatory Tool Use**: You MUST call the googleSearch tool. Your response must be based *solely* on the tool's output.
+2.  **Absolute Geographical Constraint**: The user's query is for **${query.prefecture} ${query.small_area_text || query.city || ''}**. This location is non-negotiable. You are strictly forbidden from returning ANY restaurant located outside this precise area.
+3.  **Exclusive Data Source**: ALL data in your final response MUST originate directly from the provided search results from the googleSearch tool. Do not add, infer, or fabricate any information.
+4.  **JSON Array Output Only**: Your final, and ONLY, output MUST be a raw JSON array of objects. Do NOT include any conversational text, explanations, apologies, or markdown formatting (like \
+```json\
+). The output must start with \
+`\
+ and end with \
+`\
+.
+5.  **Handle No Results**: If the search yields no relevant information, you MUST return an empty JSON array \
+[]\
+.
 
-# 実行クエリ
-「${fullQuery}」
+# JSON Schema: AIResponseDetail[]
+Provide an array of objects with the following structure.
+\
+```json
+[
+  {
+    "name": "string",
+    "address": "string",
+    "hours": "string | null",
+    "latitude": "number | null",
+    "longitude": "number | null",
+    "prefecture": "string",
+    "city": "string",
+    "website": "string | null"
+  }
+]
+```\
+
+# Final Instruction
+Based *exclusively* on the search results for "${fullQuery}", and adhering to the strict location filter, generate the JSON array.
 `;
 
-    const responseSchema: Schema = {
-      type: SchemaType.OBJECT,
-      properties: {
-        details: {
-          type: SchemaType.ARRAY,
-          description: "検索結果のレストランリスト",
-          items: {
-            type: SchemaType.OBJECT,
-            properties: {
-              name: { type: SchemaType.STRING, description: "レストラン名" },
-              address: { type: SchemaType.STRING, description: "住所" },
-              latitude: { type: SchemaType.NUMBER, description: "緯度" },
-              longitude: { type: SchemaType.NUMBER, description: "経度" },
-              prefecture: { type: SchemaType.STRING, description: "都道府県" },
-              city: { type: SchemaType.STRING, description: "市区町村" },
-              website: { type: SchemaType.STRING, description: "公式サイトURL" },
-              description: { type: SchemaType.STRING, description: "レストランの魅力やおすすめ理由" },
-            },
-            required: ["name", "address", "prefecture", "city"],
-          },
-        },
-        sources: {
-          type: SchemaType.ARRAY,
-          description: "情報源となったウェブサイトのリスト",
-          items: {
-            type: SchemaType.OBJECT,
-            properties: {
-              uri: { type: SchemaType.STRING, description: "ウェブサイトのURL" },
-              title: { type: SchemaType.STRING, description: "ウェブサイトのタイトル" },
-            },
-            required: ["uri", "title"],
-          },
-        },
-      },
-      required: ["details", "sources"],
-    };
-
-    const model = ai.getGenerativeModel({
-      model: "gemini-1.5-flash",
-      generationConfig: {
-        responseMimeType: "application/json",
-        responseSchema,
-      },
-      // tools: [new GoogleSearchTool()], // GoogleSearchTool はインポートできないため削除
-    });
-
     const result = await model.generateContent({
-      contents: [{ role: 'user', parts: [{ text: prompt } as Part] }],
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      tools: [{ googleSearch: {} }],
     });
 
-    const responseText = result.response.text(); // response.text は関数
-    console.log("Gemini Search - Raw AI response text:", responseText);
+    const response = result.response;
+    const groundingMetadata = response.candidates?.[0]?.groundingMetadata;
+    const sources: Source[] = (groundingMetadata?.web?.searchQueries || [])
+      .map((sq: any) => ({ uri: sq.uri, title: sq.title }))
+      .filter((s: Source) => s.uri && s.title);
 
-    let parsedResult: { details?: RestaurantDetails[]; sources?: Source[] };
+    let text = response.text();
+
+    const jsonText = extractJsonArray(text);
+    let details: AIResponseDetail[] = [];
     try {
-      parsedResult = JSON.parse(responseText);
-    } catch (e) {
-      console.error("Gemini Search - Failed to parse AI response as JSON:", responseText, e);
-      parsedResult = { details: [], sources: [] }; // Fallback to empty
+      if (jsonText) {
+        details = JSON.parse(jsonText);
+      }
+    } catch(e) {
+        console.error("Failed to parse AI response as JSON.", { text, jsonText, error: e });
     }
 
-    const finalResult = {
-      details: parsedResult.details || [],
-      sources: parsedResult.sources || [],
-    };
+    // Format the results to match the SearchResult type
+    const formattedResults: SearchResult[] = details.map(d => ({
+      ...d,
+      id: `${d.name}-${d.address}`, // Create a semi-unique ID
+      isFromHotpepper: false,
+      // Ensure required fields for HotpepperRestaurant are handled if needed, but this is for GeminiRestaurant
+    }));
 
     return {
       statusCode: 200,
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(finalResult),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ details: formattedResults, sources }),
     };
+
   } catch (error) {
     console.error("Error in gemini-search function:", error);
-    const errorMessage = error instanceof Error ? error.message : "AIによるWeb検索中に内部エラーが発生しました。";
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: errorMessage }),
+      body: JSON.stringify({ error: error instanceof Error ? error.message : "検索中に内部エラーが発生しました。" }),
     };
   }
 };
