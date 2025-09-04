@@ -103,7 +103,7 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
     };
 
     const model = ai.getGenerativeModel({
-      model: "gemini-1.5-flash",
+      model: "gemini-1.5-pro",
       generationConfig: {
         responseMimeType: "application/json",
         responseSchema,
