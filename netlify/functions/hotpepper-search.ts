@@ -22,10 +22,14 @@ const handler: Handler = async (event: HandlerEvent) => {
     }
     
     const buildParams = (q: SearchQuery) => {
+        const count = 50;
+        const start = q.page ? (q.page - 1) * count + 1 : 1;
+
         const params = new URLSearchParams({
             key: HOTPEPPER_API_KEY,
             format: 'json',
-            count: '30'
+            count: count.toString(),
+            start: start.toString(),
         });
         if (q.genre) params.append('genre', q.genre);
         if (q.small_area_code) {

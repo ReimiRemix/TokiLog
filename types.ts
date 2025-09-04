@@ -51,6 +51,7 @@ export interface SearchQuery {
   genre_text?: string;
   storeName: string;
   small_area_text?: string;
+  page?: number;
 }
 
 export type ManualAddFormData = Pick<Restaurant, 'name' | 'prefecture' | 'city' | 'address' | 'hours' | 'website' | 'genres' | 'priceRange'>;

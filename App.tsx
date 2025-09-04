@@ -84,6 +84,7 @@ const sortTypeLabels: { [key in SortType]: string } = {
 
 const App: React.FC = () => {
   const queryClient = useQueryClient();
+  const [hotpepperPage, setHotpepperPage] = useState(1);
   const [user, setUser] = useState<User | null>(null);
   console.log('App.tsx - user object:', user);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -92,7 +93,9 @@ const App: React.FC = () => {
   const [currentViewedUserId, setCurrentViewedUserId] = useState<string | null>(null); // For shared links
   const [selectedFollowedUserId, setSelectedFollowedUserId] = useState<string | null>(null); // For selected followed user's restaurants
   const [authLoading, setAuthLoading] = useState(true);
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [hotpepperResults, setHotpepperResults] = useState<SearchResult[]>([]);
+  const [geminiResults, setGeminiResults] = useState<SearchResult[]>([]);
+  const [activeSearchTab, setActiveSearchTab] = useState<'hotpepper' | 'ai'>('hotpepper');
   const [geminiSearchTriggered, setGeminiSearchTriggered] = useState(false);
   const [currentSearchQuery, setCurrentSearchQuery] = useState<SearchQuery | null>(null);
   const [view, setView] = useState<View>('favorites');
@@ -459,10 +462,8 @@ const App: React.FC = () => {
       return fetchRestaurantDetails(query);
     },
     onSuccess: (data) => {
-        const geminiResults = (data.details || []).map(detail => ({ ...detail, sources: data.sources, isFromHotpepper: false as const }));
-        const existingKeys = new Set(searchResults.map(r => `${r.name}:${r.address}`));
-        const newUniqueResults = geminiResults.filter(r => !existingKeys.has(`${r.name}:${r.address}`));
-        setSearchResults(prevResults => [...prevResults, ...newUniqueResults]);
+        const newGeminiResults = (data.details || []).map(detail => ({ ...detail, sources: data.sources, isFromHotpepper: false as const }));
+        setGeminiResults(newGeminiResults);
     },
   });
   
@@ -480,12 +481,8 @@ const App: React.FC = () => {
       return (await response.json()) as HotpepperRestaurant[];
     },
     onSuccess: (data, query) => {
-      setSearchResults(data);
+      setHotpepperResults(data);
       setSearchError(null); // Clear previous errors on new success
-      if (data.length === 0) {
-        geminiSearchMutation.mutate(query);
-        setGeminiSearchTriggered(true);
-      }
     },
     onError: (error) => {
       setSearchResults([]);
@@ -729,12 +726,21 @@ const App: React.FC = () => {
   // --- Event Handlers ---
   const handleSearch = (query: SearchQuery) => {
     setView('search');
-    setSearchResults([]);
+    setHotpepperResults([]);
+    setGeminiResults([]);
+    setActiveSearchTab('hotpepper');
     setCurrentSearchQuery(query);
+    setHotpepperPage(1); // Reset page to 1 on new search
     setGeminiSearchTriggered(false);
     setAddRestaurantSuccessMessage(null); // Clear success message on new search
     setSearchError(null); // Clear previous errors on new search
-    hotpepperSearchMutation.mutate(query);
+    hotpepperSearchMutation.mutate({ ...query, page: 1 });
+  };
+
+  const handleHotpepperPageChange = (newPage: number) => {
+    if (!currentSearchQuery) return;
+    setHotpepperPage(newPage);
+    hotpepperSearchMutation.mutate({ ...currentSearchQuery, page: newPage });
   };
   
   const handleGeocode = async (address: string) => {
@@ -880,12 +886,7 @@ const App: React.FC = () => {
     return null;
   }, [sidebarFilters, genreFilters]);
 
-  const filteredSearchResults = useMemo(() => {
-    if (!currentSearchQuery?.prefecture || searchResults.length === 0) {
-      return searchResults;
-    }
-    return searchResults.filter(result => result.prefecture === currentSearchQuery.prefecture);
-  }, [searchResults, currentSearchQuery?.prefecture]);
+
 
   // --- Render logic ---
   if (authLoading) {
@@ -977,33 +978,82 @@ const App: React.FC = () => {
                       <p className="text-sm mt-1">{searchError}</p>
                     </div>
                   )}
-                  {addRestaurantSuccessMessage && (
-                    <div className="p-4 mb-4 bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-200 rounded-md">
-                      {addRestaurantSuccessMessage}
-                    </div>
-                  )}
-                  {hotpepperSearchMutation.isSuccess && !geminiSearchTriggered && (
-                      <div className="text-center my-6 p-4 bg-light-primary-soft-bg dark:bg-dark-primary-soft-bg rounded-ui-medium">
-                          <button
-                              onClick={() => {
-                                  if(currentSearchQuery) geminiSearchMutation.mutate(currentSearchQuery);
-                                  setGeminiSearchTriggered(true);
-                              }}
-                              disabled={geminiSearchMutation.isPending}
-                              className="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold rounded-md bg-light-primary text-white hover:bg-light-primary-hover dark:bg-dark-primary dark:text-slate-900 dark:hover:bg-dark-primary-hover transition-colors disabled:opacity-50"
-                          >
-                              {geminiSearchMutation.isPending ? <><SmallLoadingSpinner /><span>検索中...</span></> : <><SparklesIcon /><span>AIでもっと詳しく検索</span></>}
-                          </button>
-                          <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary mt-2">ホットペッパーグルメの情報に加え、AIによるWeb検索でより多くの候補を探します。</p>
-                      </div>
-                  )}
-                  <SearchResultList 
-                    results={filteredSearchResults} 
-                    onAddToFavorites={addRestaurantMutation.mutate}
-                    favoriteRestaurants={restaurants}
-                    isAddingToFavorites={addRestaurantMutation.isPending}
-                    onAnalyzeRestaurant={analyzeRestaurantMutation.mutateAsync}
-                  />
+                  <div className="border-b border-light-border dark:border-dark-border">
+                    <nav className="-mb-px flex space-x-6" aria-label="Tabs">
+                      <button
+                        onClick={() => setActiveSearchTab('hotpepper')}
+                        className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
+                          activeSearchTab === 'hotpepper'
+                            ? 'border-light-primary dark:border-dark-primary text-light-primary dark:text-dark-primary'
+                            : 'border-transparent text-light-text-secondary dark:text-dark-text-secondary hover:text-light-text dark:hover:text-dark-text hover:border-gray-300 dark:hover:border-gray-500'
+                        }`}
+                      >
+                        ホットペッパー
+                      </button>
+                      <button
+                        onClick={() => {
+                          setActiveSearchTab('ai');
+                          if (currentSearchQuery && !geminiResults.length && !geminiSearchMutation.isPending) {
+                            geminiSearchMutation.mutate(currentSearchQuery);
+                          }
+                        }}
+                        className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
+                          activeSearchTab === 'ai'
+                            ? 'border-light-primary dark:border-dark-primary text-light-primary dark:text-dark-primary'
+                            : 'border-transparent text-light-text-secondary dark:text-dark-text-secondary hover:text-light-text dark:hover:text-dark-text hover:border-gray-300 dark:hover:border-gray-500'
+                        }`}
+                      >
+                        AI検索
+                        {geminiSearchMutation.isPending && <SmallLoadingSpinner className="inline ml-2" />}
+                      </button>
+                    </nav>
+                  </div>
+
+                  <div className="mt-6">
+                    {activeSearchTab === 'hotpepper' && (
+                      <>
+                        <SearchResultList 
+                          results={hotpepperResults} 
+                          onAddToFavorites={addRestaurantMutation.mutate}
+                          favoriteRestaurants={restaurants}
+                          isAddingToFavorites={addRestaurantMutation.isPending}
+                          onAnalyzeRestaurant={analyzeRestaurantMutation.mutateAsync}
+                        />
+                        {hotpepperResults.length > 0 && (
+                          <div className="flex justify-center items-center space-x-4 mt-6">
+                            <button
+                              onClick={() => handleHotpepperPageChange(hotpepperPage - 1)}
+                              disabled={hotpepperPage === 1 || hotpepperSearchMutation.isPending}
+                              className="px-4 py-2 text-sm font-semibold rounded-md bg-light-primary text-white hover:bg-light-primary-hover dark:bg-dark-primary dark:text-slate-900 dark:hover:bg-dark-primary-hover transition-colors disabled:opacity-50"
+                            >
+                              前のページ
+                            </button>
+                            <span className="text-light-text dark:text-dark-text">{hotpepperPage}</span>
+                            <button
+                              onClick={() => handleHotpepperPageChange(hotpepperPage + 1)}
+                              disabled={hotpepperResults.length < 50 || hotpepperSearchMutation.isPending}
+                              className="px-4 py-2 text-sm font-semibold rounded-md bg-light-primary text-white hover:bg-light-primary-hover dark:bg-dark-primary dark:text-slate-900 dark:hover:bg-dark-primary-hover transition-colors disabled:opacity-50"
+                            >
+                              次のページ
+                            </button>
+                          </div>
+                        )}
+                      </>
+                    )}
+                    {activeSearchTab === 'ai' && (
+                      <>
+                        <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary mb-4">AIの知識ベースから、関連する可能性のあるお店を提案します。</p>
+                        <SearchResultList 
+                          results={geminiResults} 
+                          onAddToFavorites={addRestaurantMutation.mutate}
+                          favoriteRestaurants={restaurants}
+                          isAddingToFavorites={addRestaurantMutation.isPending}
+                          onAnalyzeRestaurant={analyzeRestaurantMutation.mutateAsync}
+                        />
+                      </>
+                    )}
+                  </div>
+
                 </>
               )}
               {view === 'userSearch' && !isReadOnlyMode && user && (
