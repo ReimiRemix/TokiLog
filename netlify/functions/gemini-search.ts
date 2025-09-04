@@ -177,7 +177,9 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
           responseMimeType: "application/json",
           responseSchema,
         },
-        tools: useGoogleSearch ? [{ googleSearch: {} }] : [],
+        // TypeScriptのエラーを回避するため、型アサーション `as any` を使用
+        // `@google/generative-ai`のTool型定義に`googleSearch`が直接含まれないため
+        tools: useGoogleSearch ? [{ googleSearch: {} } as any] : [],
       });
 
       const result = await model.generateContent({
