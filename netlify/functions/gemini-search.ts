@@ -52,15 +52,16 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
     console.log("Gemini Search - Full query for prompt:", fullQuery);
 
     const prompt = `
-あなたは、指定されたエリアのレストラン情報に詳しい検索アシスタントです。ユーザーのクエリに基づいて、あなたの知識から最適なレストランをJSON形式で提案してください。
+あなたは、その土地の食文化に精通したグルメ専門家です。ユーザーのクエリに基づいて、あなたの知識から最適なレストランをJSON形式で提案してください。
 
 # 厳守すべきルール
-1. **知識の活用**: あなたが持つ知識を最大限に活用して、クエリに最も一致するレストランを提案してください。
+1. **知識の活用**: あなたが持つ知識を最大限に活用し、クエリに最も一致するレストランを提案してください。有名なレストランだけでなく、地元の人に愛される隠れた名店もいくつか含めてください。
 2. **実在する情報のみ**: **情報を創作することは絶対に禁止します。** あなたの知識ベースに存在する、実在のレストランの情報のみを提供してください。もしクエリに合致する実在のレストランがなければ、結果は空にしてください。
-3. **厳格なエリア制約**: 検索エリアは「${query.prefecture} ${query.small_area_text || query.city || ''}」です。このエリア外のレストランは結果に含めないでください。
-4. **正確な情報抽出**: レストランの「名前」「住所」「緯度」「経度」「都道府県」「市区町村」「公式サイトのURL」を、わかる範囲で正確に抽出し、指定されたJSONスキーマ通りに最大50件出力してください。緯度・経度が不明な場合は省略して構いません。
-5. **JSON出力の徹底**: あなたの回答は、指定されたJSONスキーマに準拠したJSONオブジェクトのみでなければなりません。説明や他のテキストは一切含めないでください。
-6. **結果がない場合**: 条件に合うレストランが見つからなかった場合は、必ずdetailsを空の配列 [] として返してください。
+3. **魅力的な説明**: 各レストランの`description`項目に、その店の魅力やおすすめの理由を80文字以内で具体的に記述してください。（例：「濃厚な豚骨スープと自家製麺が絶品。」「新鮮な魚介を使った海鮮丼が名物。」）
+4. **厳格なエリア制約**: 検索エリアは「${query.prefecture} ${query.small_area_text || query.city || ''}」です。このエリア外のレストランは結果に含めないでください。
+5. **正確な情報抽出**: レストランの「名前」「住所」「緯度」「経度」「都道府県」「市区町村」「公式サイトのURL」を、わかる範囲で正確に抽出し、指定されたJSONスキーマ通りに最大50件出力してください。
+6. **JSON出力の徹底**: あなたの回答は、指定されたJSONスキーマに準拠したJSONオブジェクトのみでなければなりません。説明や他のテキストは一切含めないでください。
+7. **結果がない場合**: 条件に合うレストランが見つからなかった場合は、必ずdetailsを空の配列 [] として返してください。
 
 # 実行クエリ
 「${fullQuery}」
@@ -82,6 +83,7 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
               prefecture: { type: SchemaType.STRING, description: "都道府県" },
               city: { type: SchemaType.STRING, description: "市区町村" },
               website: { type: SchemaType.STRING, description: "公式サイトURL" },
+              description: { type: SchemaType.STRING, description: "レストランの魅力やおすすめ理由" },
             },
             required: ["name", "address", "prefecture", "city"],
           },
@@ -103,7 +105,7 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
     };
 
     const model = ai.getGenerativeModel({
-      model: "gemini-1.5-pro",
+      model: "gemini-1.5-flash",
       generationConfig: {
         responseMimeType: "application/json",
         responseSchema,
