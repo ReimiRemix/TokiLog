@@ -83,7 +83,7 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
     return { statusCode: 405, body: JSON.stringify({ error: "Method Not Allowed" }) };
   }
 
-  const API_KEY = process.env.API_KEY;
+  const API_KEY = process.env.GEMINI_PAYG_API_KEY;
   if (!API_KEY) {
     return {
       statusCode: 500,
