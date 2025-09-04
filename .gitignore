@@ -4,3 +4,12 @@ node_modules/
 .netlify
 dist/
 .env
+
+# Log files
+*.log
+log*.txt
+errorlog.txt
+clear_incidents.txt
+
+# Windows Zone Identifier
+*Zone.Identifier
