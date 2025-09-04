@@ -1,6 +1,6 @@
 import type { Handler, HandlerEvent } from "@netlify/functions";
 import type { HotpepperRestaurant, SearchQuery } from "../../types";
-const { GoogleGenAI } = require("@google/genai");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
 
 const handler: Handler = async (event: HandlerEvent) => {
   if (event.httpMethod !== 'POST') {
@@ -65,7 +65,7 @@ const handler: Handler = async (event: HandlerEvent) => {
         const GEMINI_API_KEY = process.env.API_KEY;
         if (GEMINI_API_KEY) {
             try {
-                const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+                const ai = new GoogleGenerativeAI({ apiKey: GEMINI_API_KEY });
                 const model = ai.getGenerativeModel({ model: "gemini-pro" });
 
                 const prompt = `
