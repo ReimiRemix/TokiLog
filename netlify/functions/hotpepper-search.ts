@@ -81,7 +81,8 @@ const handler: Handler = async (event: HandlerEvent) => {
                     '- 回答はJSONオブジェクトのみとし、説明やマークダウンは含めないでください。',
                     '- 元のクエリに含まれる`prefecture`, `prefecture_code`, `storeName`は変更しないでください。',
                     '\n# 出力形式 (JSON)',
-                    '{\n  "small_area_code": "<提案する小エリアコード>",\n  "genre": "<提案するジャンルコード>",\n  "keyword": "<提案するキーワード>"\n}'
+                    '{\n  "small_area_code": "<提案する小エリアコード>",\n  "genre": "<提案するジャンルコード>",\n  "keyword": "<提案するキーワード>"
+}'
                 ].join('\n');
 
                 const result = await model.generateContent(prompt);
@@ -114,14 +115,6 @@ const handler: Handler = async (event: HandlerEvent) => {
             statusCode: 400,
             body: JSON.stringify({ error: data.results.error[0].message || "ホットペッパーAPIでエラーが発生しました。" })
         }
-    }
-
-    if (!data.results || data.results.results_available === 0) {
-        return {
-            statusCode: 200,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify([]),
-        };
     }
 
     const filteredShops = (data.results.shop || []).filter((shop: any) => 
