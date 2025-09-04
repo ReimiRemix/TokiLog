@@ -69,6 +69,15 @@ function extractJson(text: string, openChar: string, closeChar: string): string 
   return null;
 }
 
+// APIエラーオブジェクトにstatusプロパティが存在するかをチェックする型ガード
+interface APIErrorWithStatus {
+  status: number;
+}
+
+function isAPIErrorWithStatus(error: unknown): error is APIErrorWithStatus {
+  return typeof error === 'object' && error !== null && 'status' in error && typeof (error as any).status === 'number';
+}
+
 const handler: Handler = async (event: HandlerEvent, context: HandlerContext) => {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: JSON.stringify({ error: "Method Not Allowed" }) };
@@ -160,7 +169,8 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
       required: ["details", "sources"],
     };
 
-    const executeSearch = async (queryText: string, useGoogleSearch: boolean = true) => {
+    // executeSearch関数の戻り値の型をより厳密に指定
+    const executeSearch = async (queryText: string, useGoogleSearch: boolean = true): Promise<{ details: RestaurantDetails[]; sources: Source[] }> => {
       const model = ai.getGenerativeModel({
         model: "gemini-1.5-flash",
         generationConfig: {
@@ -177,14 +187,17 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
       const responseText = result.response.text();
       console.log("Gemini Search - Raw AI response text:", responseText);
 
-      let parsedResult: { details?: RestaurantDetails[]; sources?: Source[] };
+      let parsedResult: { details: RestaurantDetails[]; sources: Source[] }; // 常にdetailsとsourcesを持つことを期待
       // Geminiモデルからの応答が完全なJSONでない場合に備え、extractJsonでJSON部分を抽出
       const jsonStr = extractJson(responseText, '{', '}');
       try {
         parsedResult = jsonStr ? JSON.parse(jsonStr) : { details: [], sources: [] };
+        // JSON.parseが成功してもdetailsやsourcesがない場合（スキーマ違反の可能性）に備える
+        if (!parsedResult.details) parsedResult.details = [];
+        if (!parsedResult.sources) parsedResult.sources = [];
       } catch (e) {
         console.error("Gemini Search - Failed to parse AI response as JSON:", responseText, e);
-        parsedResult = { details: [], sources: [] };
+        parsedResult = { details: [], sources: [] }; // パース失敗時は空の配列を返す
       }
       return parsedResult;
     };
@@ -196,8 +209,8 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
     // Google Searchツールを使用して最初の検索を試みる
     try {
       parsedResult = await executeSearch(fullQuery, true); // 常にGoogle Searchツールを有効にして最初の試行
-    } catch (error: any) {
-      if (error.status === 429) {
+    } catch (error: unknown) { // errorの型をunknownに変更し、型ガードを使用
+      if (isAPIErrorWithStatus(error) && error.status === 429) {
         console.log("Gemini Search - Quota exceeded for generateContent requests. Cannot perform any more API calls today.");
         quotaExceededForToday = true;
         // APIを再呼び出しせずに、警告メッセージを設定し、空の結果で続行
@@ -221,8 +234,8 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
         parsedResult = await executeSearch(relaxedQuery, true);
         details = parsedResult.details || [];
         sources = parsedResult.sources || [];
-      } catch (error: any) {
-        if (error.status === 429) {
+      } catch (error: unknown) { // errorの型をunknownに変更し、型ガードを使用
+        if (isAPIErrorWithStatus(error) && error.status === 429) {
           console.log("Gemini Search - Quota exceeded for generateContent requests on relaxed query. Cannot perform any more API calls today.");
           quotaExceededForToday = true; // 再度クォータ超過フラグを立てる
           // APIを再呼び出しせずに、警告メッセージを設定し、空の結果で続行
@@ -260,13 +273,15 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(finalResult),
     };
-  } catch (error: any) {
+  } catch (error: unknown) { // 最上位のcatchブロックもunknownに変更
     console.error("Error in gemini-search function:", error);
     // 予期せぬ、または捕捉しきれなかったエラーの場合の最終的なハンドリング
-    const errorMessage =
-      error instanceof Error
-        ? error.message
-        : "AIによる検索中に内部エラーが発生しました。";
+    let errorMessage = "AIによる検索中に内部エラーが発生しました。";
+    if (isAPIErrorWithStatus(error) && error.status === 429) {
+      errorMessage = "APIの利用制限（1日50リクエスト）に達しました。Pay-As-You-Goプランへの移行を検討してください。詳細: https://ai.google.dev/gemini-api/docs/rate-limits";
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+    }
     return {
       statusCode: 500,
       body: JSON.stringify({ error: errorMessage }),
