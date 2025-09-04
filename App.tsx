@@ -1050,7 +1050,7 @@ const App: React.FC = () => {
                     )}
                     {activeSearchTab === 'ai' && (
                       <>
-                        <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary mb-4">AIの知識ベースから、関連する可能性のあるお店を提案します。</p>
+                        <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary mb-4">AIがWeb検索を行い、最適な候補を提案します。ホットペッパーにないお店が見つかるかもしれません。</p>
                         <SearchResultList 
                           results={geminiResults} 
                           onAddToFavorites={addRestaurantMutation.mutate}
