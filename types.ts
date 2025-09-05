@@ -109,7 +109,7 @@ export interface Notification {
   restaurant_name?: string;
   message?: string; // カスタムメッセージ
   is_read: boolean;
-  request_id?: string; // フォローリクエストのID
+  follow_request_id?: string; // フォローリクエストのID
 }
 
 // For Chat with AI

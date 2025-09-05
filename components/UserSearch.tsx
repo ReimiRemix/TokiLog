@@ -92,11 +92,14 @@ const UserSearch: React.FC<UserSearchProps> = ({ user: currentUser }) => {
       if (isFollowing(targetUserId)) throw new Error("既にフォローしています。");
       if (hasSentRequest(targetUserId)) throw new Error("既にフォローリクエストを送信済みです。");
 
-      const { error: insertError } = await supabase.from('follow_relationships').insert({
-        follower_id: currentUser.id,
-        followed_id: targetUserId,
-        status: 'pending'
-      });
+      const { error: insertError } = await supabase
+        .from('follow_relationships')
+        .insert([{
+          follower_id: currentUser.id,
+          followed_id: targetUserId,
+          status: 'pending'
+        }])
+        .select();
 
       if (insertError) {
         throw insertError;
