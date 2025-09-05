@@ -47,6 +47,7 @@ interface SidebarProps {
   onClose: () => void;
   isCollapsed: boolean;
   isReadOnly: boolean;
+  isMobile: boolean; // New prop
   onSelectMenuItem: (viewId: View | 'notifications') => void; // Update type here
   onToggleAreaFilter: () => void; // Add this prop back
   currentView: View;
@@ -66,6 +67,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   onClose,
   isCollapsed,
   isReadOnly,
+  isMobile, // Destructure new prop
   onSelectMenuItem,
   onToggleAreaFilter, // Destructure the new prop
   currentView,
@@ -87,14 +89,6 @@ const Sidebar: React.FC<SidebarProps> = ({
   }, [isSuperAdmin]);
 
   const [orderedMenuItems, setOrderedMenuItems] = useLocalStorage<MenuItem[]>('sidebarMenuItems', menuItems);
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768);
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
 
   const grouped = useMemo(() => {
     return restaurants.reduce<Record<string, Record<string, Restaurant[]>>>((acc, restaurant) => {

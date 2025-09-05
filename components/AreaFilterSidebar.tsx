@@ -14,6 +14,8 @@ interface AreaFilterSidebarProps {
   isOpen: boolean;
   onClose: () => void;
   isReadOnly: boolean;
+  isMobile: boolean; // New prop
+  isOverlayMode: boolean; // New prop
   style?: React.CSSProperties;
 }
 
@@ -26,6 +28,8 @@ const AreaFilterSidebar: React.FC<AreaFilterSidebarProps> = ({
   isOpen,
   onClose,
   isReadOnly,
+  isMobile, // Destructure new prop
+  isOverlayMode, // Destructure new prop
   style,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -104,12 +108,12 @@ const AreaFilterSidebar: React.FC<AreaFilterSidebarProps> = ({
   return (
     <aside
       className={twMerge(
-        "fixed inset-y-0 z-40 h-full bg-light-card dark:bg-dark-card border-r border-light-border dark:border-dark-border p-4 flex flex-col",
+        "fixed inset-y-0 h-full bg-light-card dark:bg-dark-card border-r border-light-border dark:border-dark-border p-4 flex flex-col",
         "transform transition-transform duration-300 ease-in-out",
-        "w-80", // Fixed width
-        isOpen ? "translate-x-0" : "-translate-x-full",
+        isOverlayMode ? "inset-0 z-40" : "z-40 w-80", // Overlay vs. Side-by-side styling
+        isOpen ? "translate-x-0" : "-translate-x-full", // Always controlled by isOpen
       )}
-      style={style}
+      style={isOverlayMode ? {} : style} // Apply style prop only for non-overlay mode
     >
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-semibold text-light-text dark:text-dark-text">エリアで絞り込み</h3>
