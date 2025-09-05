@@ -30,7 +30,7 @@ const defaultMenuItems: MenuItem[] = [
   { id: 'favorites', label: 'お気に入り', icon: StarIcon },
   { id: 'search', label: 'お店を探す', icon: SearchIcon },
   { id: 'userSearch', label: 'ユーザーを探す', icon: UsersIcon },
-  
+  { id: 'areaFilter', label: 'エリアで絞り込み', icon: MapPinIcon },
   { id: 'notifications', label: '通知', icon: BellIcon }, // New menu item
   { id: 'map', label: 'マップ', icon: MapIcon },
   { id: 'analysis', label: 'AIに相談', icon: SparklesIcon },
@@ -48,6 +48,7 @@ interface SidebarProps {
   isCollapsed: boolean;
   isReadOnly: boolean;
   onSelectMenuItem: (viewId: View | 'notifications') => void; // Update type here
+  onToggleAreaFilter: () => void; // Add this prop back
   currentView: View;
   userProfile: UserProfile | null;
   followersCount: number;
@@ -66,6 +67,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   isCollapsed,
   isReadOnly,
   onSelectMenuItem,
+  onToggleAreaFilter, // Destructure the new prop
   currentView,
   userProfile,
   followersCount,
@@ -93,35 +95,6 @@ const Sidebar: React.FC<SidebarProps> = ({
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
-
-  useEffect(() => {
-    // Synchronize menu items with admin status
-    setOrderedMenuItems(prevItems => {
-      let newItems = [...prevItems];
-      const hasMonitoring = newItems.some(item => item.id === 'monitoring');
-
-      let changed = false; // Flag to track if changes occurred
-
-      if (isSuperAdmin) {
-        if (!hasMonitoring) {
-          newItems.push({ id: 'monitoring', label: '監視', icon: ActivityIcon });
-          changed = true;
-        }
-      } else {
-        const filteredItems = newItems.filter(item => item.id !== 'monitoring');
-        if (filteredItems.length !== newItems.length) { // Check if any items were filtered out
-          newItems = filteredItems;
-          changed = true;
-        }
-      }
-
-      // Only update state if changes actually occurred
-      if (changed) {
-        return newItems.filter(item => item.id !== 'followed' && item.id !== 'followers');
-      }
-      return prevItems.filter(item => item.id !== 'followed' && item.id !== 'followers'); // Also filter if no other changes
-    });
-  }, [isSuperAdmin, setOrderedMenuItems]);
 
   const grouped = useMemo(() => {
     return restaurants.reduce<Record<string, Record<string, Restaurant[]>>>((acc, restaurant) => {
@@ -271,9 +244,13 @@ const Sidebar: React.FC<SidebarProps> = ({
               <li key={item.id} className="flex items-center group">
                 <button
                   onClick={() => {
-                    // item.id が 'admin_user_management' の場合は 'settings' に変換
-                    const targetView = item.id === 'admin_user_management' ? 'settings' : item.id;
-                    onSelectMenuItem(targetView as View); // View 型にキャスト
+                    if (item.id === 'areaFilter') { // Handle areaFilter separately
+                      onToggleAreaFilter();
+                    } else {
+                      // item.id が 'admin_user_management' の場合は 'settings' に変換
+                      const targetView = item.id === 'admin_user_management' ? 'settings' : item.id;
+                      onSelectMenuItem(targetView as View); // View 型にキャスト
+                    }
                     onClose();
                   }}
                   className={twMerge(
@@ -291,134 +268,7 @@ const Sidebar: React.FC<SidebarProps> = ({
             ))}
           </ul>
 
-          {showFullContent && (
-            <div className="mt-6">
-              <h3 className="text-lg font-semibold text-light-text dark:text-dark-text mb-4">エリアで絞り込み</h3>
-              {!isReadOnly && (
-                <div className="relative mb-4">
-                  <input
-                    type="search"
-                    placeholder="エリアや店名で検索..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 text-sm bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md focus:ring-2 focus:ring-light-primary focus:border-light-primary placeholder:text-light-text-secondary dark:placeholder:text-dark-text-secondary"
-                  />
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <SearchIcon className="w-5 h-5 text-light-text-secondary dark:text-dark-text-secondary" />
-                  </div>
-                </div>
-              )}
-              {filteredPrefectures.length > 0 ? (
-                <ul className="space-y-1">
-                  {filteredPrefectures.map((prefecture) => {
-                    const cities = grouped[prefecture];
-                    const isPrefectureActive = activeFilter.some(f => f.type === 'prefecture' && f.value === prefecture);
-                    const totalCount = Object.values(cities).flat().length;
-
-                    const filteredCities = Object.entries(cities).filter(([city, cityRestaurants]) => {
-                      if (!lowercasedQuery) return true;
-                      if (prefecture.toLowerCase().includes(lowercasedQuery)) return true;
-                      if (city.toLowerCase().includes(lowercasedQuery)) return true;
-                      return cityRestaurants.some(r => r.name.toLowerCase().includes(lowercasedQuery));
-                    });
-
-                    return (
-                      <li key={prefecture}>
-                        <div className={twMerge("flex items-center justify-between rounded-md transition-colors", isPrefectureActive ? 'bg-light-primary-soft-bg dark:bg-dark-primary-soft-bg' : 'hover:bg-slate-100 dark:hover:bg-slate-700/50')}>
-                          <button
-                            onClick={() => handleFilterClick('prefecture', prefecture)}
-                            disabled={isReadOnly}
-                            className={twMerge(
-                                'flex-grow text-left py-1.5 font-bold text-base flex items-center gap-3 transition-colors',
-                                isPrefectureActive ? 'text-light-primary dark:text-dark-primary' : 'text-light-text dark:text-dark-text',
-                                isPrefectureActive ? 'pl-2 border-l-4 border-light-primary dark:border-dark-primary' : 'pl-3 border-l-4 border-transparent',
-                                isReadOnly && 'cursor-not-allowed'
-                            )}
-                          >
-                            {prefecture}
-                            <span className="ml-auto text-xs font-medium text-light-text-secondary dark:text-dark-text-secondary bg-slate-200 dark:bg-slate-700 rounded-full px-2 py-0.5">{totalCount}</span>
-                          </button>
-                          <button onClick={() => togglePrefectureExpansion(prefecture)} className="p-1.5 mr-1 rounded-md text-light-text-secondary dark:text-dark-text-secondary">
-                            <ChevronDownIcon className={`w-5 h-5 transition-transform duration-200 ${expanded[prefecture] ? 'rotate-180' : ''}`} />
-                          </button>
-                        </div>
-                        {expanded[prefecture] && (
-                          <ul className="pl-4 mt-1 space-y-1 border-l-2 border-light-border dark:border-dark-border ml-2">
-                            {filteredCities.map(([city, cityRestaurants]) => {
-                              const isCityActive = activeFilter.some(f => f.type === 'city' && f.value === city);
-                              const filteredRestaurants = cityRestaurants.filter(r =>
-                                  !lowercasedQuery ||
-                                  prefecture.toLowerCase().includes(lowercasedQuery) ||
-                                  city.toLowerCase().includes(lowercasedQuery) ||
-                                  r.name.toLowerCase().includes(lowercasedQuery)
-                              );
-
-                              return (
-                                <li key={city}>
-                                  <div className={twMerge("flex items-center justify-between rounded-md transition-colors", isCityActive ? 'bg-light-primary-soft-bg dark:bg-dark-primary-soft-bg' : 'hover:bg-slate-100 dark:hover:bg-slate-700/50')}>
-                                    <button
-                                        onClick={() => handleFilterClick('city', city)}
-                                        disabled={isReadOnly}
-                                        className={twMerge(
-                                            'flex-grow text-left py-1 flex items-center gap-3',
-                                            isCityActive ? 'text-light-primary dark:text-dark-primary font-semibold' : 'text-light-text-secondary dark:text-dark-text-secondary',
-                                            isCityActive ? 'pl-2 border-l-4 border-light-primary dark:border-dark-primary' : 'pl-3 border-l-4 border-transparent',
-                                            isReadOnly && 'cursor-not-allowed'
-                                        )}
-                                    >
-                                        {city}
-                                        <span className="ml-auto text-xs font-normal text-light-text-secondary dark:text-dark-text-secondary bg-slate-200 dark:bg-slate-700 rounded-full px-2 py-0.5">{cityRestaurants.length}</span>
-                                    </button>
-                                    <button onClick={() => togglePrefectureExpansion(`${prefecture}-${city}`)} className="p-1.5 mr-1 rounded-md text-light-text-secondary dark:text-dark-text-secondary">
-                                        <ChevronDownIcon className={`w-4 h-4 transition-transform duration-200 ${expanded[`${prefecture}-${city}`] ? 'rotate-180' : ''}`} />
-                                    </button>
-                                  </div>
-                                  {expanded[`${prefecture}-${city}`] && (
-                                    <ul className="pl-4 mt-1">
-                                      {filteredRestaurants.map(restaurant => (
-                                        <li key={restaurant.id}>
-                                          <button
-                                            onClick={() => onScrollToRestaurant(restaurant.id)}
-                                            className="w-full text-left px-2 py-1 text-sm font-normal text-light-text-secondary dark:text-dark-text-secondary hover:text-light-text dark:hover:text-dark-text hover:bg-slate-100 dark:hover:bg-slate-700/80 rounded-md truncate transition-colors"
-                                            title={restaurant.name}
-                                          >
-                                            {restaurant.name}
-                                          </button>
-                                        </li>
-                                      ))}
-                                    </ul>
-                                  )}
-                                </li>
-                              );
-                            })}
-                          </ul>
-                        )}
-                      </li>
-                    );
-                  })}
-                </ul>
-              ) : (
-                <p className="text-center text-sm text-light-text-secondary dark:text-dark-text-secondary mt-8">
-                  検索条件に一致するお店は見つかりませんでした。
-                </p>
-              )}
-            </div>
-          )}
         </nav>
-
-      <div className="flex-1 overflow-y-auto -mr-2 pr-2">
-          {showFullContent ? (
-            <div className="flex items-center justify-center h-full flex-col">
-              <MapPinIcon className="w-6 h-6 text-light-text-secondary dark:text-dark-text-secondary" />
-              <span className="text-sm text-light-text-secondary dark:text-dark-text-secondary mt-1">エリアで絞り込み</span>
-            </div>
-          ) : (
-            <div className="flex items-center justify-center h-full flex-col">
-              <MapPinIcon className="w-6 h-6 text-light-text-secondary dark:text-dark-text-secondary" />
-              <span className="text-sm text-light-text-secondary dark:text-dark-text-secondary mt-1">エリアで絞り込み</span>
-            </div>
-          )}
-        </div>
     </aside>
   );
 };
