@@ -117,9 +117,9 @@ const Sidebar: React.FC<SidebarProps> = ({
 
       // Only update state if changes actually occurred
       if (changed) {
-        return newItems;
+        return newItems.filter(item => item.id !== 'followed' && item.id !== 'followers');
       }
-      return prevItems; // Return previous state if no changes
+      return prevItems.filter(item => item.id !== 'followed' && item.id !== 'followers'); // Also filter if no other changes
     });
   }, [isSuperAdmin, setOrderedMenuItems]);
 
