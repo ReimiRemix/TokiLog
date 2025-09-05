@@ -512,7 +512,7 @@ const App: React.FC = () => {
             const errorData = await response.json();
             throw new Error(errorData.error || 'AIによる店舗分析に失敗しました。');
         }
-        return (await response.json()) as { comment: string };
+        return (await response.json()) as { comment: string, inputTokens?: number, outputTokens?: number };
     }
   });
   
@@ -1353,8 +1353,8 @@ const App: React.FC = () => {
                   setView('followed'); // Switch to followed view to show their restaurants
                 }} />
               )}
-              {view === 'pendingRequests' && !isReadOnlyMode && (
-                <PendingRequestsList />
+              {view === 'notifications' && !isReadOnlyMode && (
+                <NotificationsView />
               )}
               {view === 'settings' && !isReadOnlyMode && (
                 <SettingsPage />

@@ -226,6 +226,8 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
         parsedResult = await executeSearch(relaxedQuery, true);
         details = parsedResult.details || [];
         sources = parsedResult.sources || [];
+        totalInputTokens += parsedResult.inputTokens;
+        totalOutputTokens += parsedResult.outputTokens;
       } catch (error: unknown) { // errorの型をunknownに変更し、型ガードを使用
         if (isAPIErrorWithStatus(error) && error.status === 429) {
           console.log("Gemini Search - Quota exceeded for generateContent requests on relaxed query. Cannot perform any more API calls today.");
@@ -255,6 +257,8 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
       // ソース情報をユニーク化 (重複するURIを排除)
       sources: [...new Set(sources.map(s => JSON.stringify(s)))].map(s => JSON.parse(s)),
       ...(warning && { warning }), // warningがある場合のみ結果に含める
+      inputTokens: totalInputTokens,
+      outputTokens: totalOutputTokens,
     };
 
     // キャッシュに保存

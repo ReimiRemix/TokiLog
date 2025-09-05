@@ -4,6 +4,9 @@ import { supabase } from '../supabaseClient';
 import LoadingSpinner from './icons/LoadingSpinner';
 import { Notification } from '../types';
 import NotificationCard from './NotificationCard';
+import { getSentFollowRequests, SentFollowRequest } from '../services/followService';
+import CheckIcon from './icons/CheckIcon';
+import XIcon from './icons/XIcon';
 
 const NotificationsView: React.FC = () => {
   const queryClient = useQueryClient();
@@ -17,7 +20,7 @@ const NotificationsView: React.FC = () => {
   });
 
   // Fetch all notifications for the current user
-  const { data: notifications, isLoading, error } = useQuery<Notification[]> ({
+  const { data: notifications, isLoading: isLoadingNotifications, error: errorNotifications } = useQuery<Notification[]> ({
     queryKey: ['notifications', currentUser?.id],
     queryFn: async () => {
       if (!currentUser) return [];
@@ -34,6 +37,14 @@ const NotificationsView: React.FC = () => {
     refetchOnMount: 'always',
   });
 
+  // Fetch sent follow requests
+  const { data: sentRequests, isLoading: isLoadingSent, error: errorSent } = useQuery<SentFollowRequest[]>({
+    queryKey: ['sentFollowRequests', currentUser?.id],
+    queryFn: getSentFollowRequests,
+    enabled: !!currentUser,
+    refetchOnMount: 'always',
+  });
+
   const acceptMutation = useMutation({
     mutationFn: async (requestId: string) => {
       const { error } = await supabase
@@ -46,6 +57,7 @@ const NotificationsView: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
       queryClient.invalidateQueries({ queryKey: ['followers'] });
+      queryClient.invalidateQueries({ queryKey: ['sentFollowRequests'] }); // Invalidate sent requests too
       alert('フォローリクエストを承認しました！');
     },
     onError: (err: any) => {
@@ -65,6 +77,7 @@ const NotificationsView: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      queryClient.invalidateQueries({ queryKey: ['sentFollowRequests'] }); // Invalidate sent requests too
       alert('フォローリクエストを拒否しました。');
     },
     onError: (err: any) => {
@@ -73,7 +86,26 @@ const NotificationsView: React.FC = () => {
     },
   });
 
-  if (isLoading) {
+  const cancelSentRequestMutation = useMutation({
+    mutationFn: async (requestId: string) => {
+      const { error } = await supabase
+        .from('follow_relationships')
+        .delete()
+        .eq('id', requestId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sentFollowRequests'] });
+      alert('送信したフォローリクエストをキャンセルしました。');
+    },
+    onError: (err: any) => {
+      console.error('Error canceling sent follow request:', err);
+      alert('送信したフォローリクエストのキャンセルに失敗しました: ' + err.message);
+    },
+  });
+
+  if (isLoadingNotifications || isLoadingSent) {
     return (
       <div className="flex justify-center items-center p-4">
         <LoadingSpinner />
@@ -82,22 +114,28 @@ const NotificationsView: React.FC = () => {
     );
   }
 
-  if (error) {
-    return <div className="text-red-500 p-4">通知の読み込みエラー: {error.message}</div>;
+  if (errorNotifications) {
+    return <div className="text-red-500 p-4">通知の読み込みエラー: {errorNotifications.message}</div>;
+  }
+
+  if (errorSent) {
+    return <div className="text-red-500 p-4">送信リクエストの読み込みエラー: {errorSent.message}</div>;
   }
 
   const hasNotifications = notifications && notifications.length > 0;
+  const hasSentRequests = sentRequests && sentRequests.length > 0;
 
   return (
     <div className="p-4">
       <h2 className="text-2xl font-bold mb-4 text-light-text dark:text-dark-text">通知</h2>
 
-      {!hasNotifications && (
+      {!hasNotifications && !hasSentRequests && (
         <div className="text-light-text-secondary dark:text-dark-text-secondary p-4 text-center">通知はありません。</div>
       )}
 
       {hasNotifications && (
-        <div className="space-y-3">
+        <div className="space-y-3 mb-6">
+          <h3 className="text-xl font-semibold mb-3 text-light-text dark:text-dark-text">受信した通知</h3>
           {notifications.map((notification) => (
             <NotificationCard
               key={notification.id}
@@ -110,6 +148,38 @@ const NotificationsView: React.FC = () => {
               onRejectFollowRequest={rejectMutation.mutate}
             />
           ))}
+        </div>
+      )}
+
+      {hasSentRequests && (
+        <div>
+          <h3 className="text-xl font-semibold mb-3 text-light-text dark:text-dark-text">送信したリクエスト</h3>
+          <div className="space-y-3">
+            {sentRequests.map((request) => (
+              <div key={request.request_id} className="flex items-center justify-between bg-light-card dark:bg-dark-card p-3 rounded-md shadow-sm border border-light-border dark:border-dark-border">
+                <div>
+                  <p className="font-semibold text-light-text dark:text-dark-text">
+                    {request.addressee_display_name || request.addressee_username}
+                  </p>
+                  <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">
+                    @{request.addressee_username} へのリクエスト
+                  </p>
+                  <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary mt-1">
+                    {new Date(request.created_at).toLocaleDateString()}
+                  </p>
+                </div>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => cancelSentRequestMutation.mutate(request.request_id)}
+                    disabled={cancelSentRequestMutation.isPending}
+                    className="bg-red-500 text-white px-3 py-1.5 rounded-full hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5" 
+                  >
+                    <XIcon className="w-4 h-4" /> キャンセル
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>

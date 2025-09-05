@@ -4,6 +4,8 @@ import type { RestaurantDetails, SearchQuery, Source } from '../types';
 interface FetchResult {
   details: RestaurantDetails[] | null;
   sources: Source[];
+  inputTokens?: number;
+  outputTokens?: number;
 }
 
 export const fetchRestaurantDetails = async (query: SearchQuery): Promise<FetchResult> => {

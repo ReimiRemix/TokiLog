@@ -190,6 +190,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       onFilterChange(activeFilter.filter((_, i) => i !== existingIndex));
     } else {
       onFilterChange([...activeFilter, newFilter]);
+      onSelectMenuItem('favorites'); // Switch to favorites view when a filter is applied
     }
   };
 
@@ -264,7 +265,6 @@ const Sidebar: React.FC<SidebarProps> = ({
         </div>
       )}
 
-      {!isReadOnly && (
         <nav className="flex-1 -mr-2 pr-2 mb-4 border-b border-light-border dark:border-dark-border pb-4">
           <ul className="space-y-1">
             {orderedMenuItems.map((item, index) => (
@@ -290,12 +290,9 @@ const Sidebar: React.FC<SidebarProps> = ({
               </li>
             ))}
           </ul>
-        </nav>
-      )}
 
-      <div className="flex-1 overflow-y-auto -mr-2 pr-2">
-          {showFullContent ? (
-            <>
+          {showFullContent && (
+            <div className="mt-6">
               <h3 className="text-lg font-semibold text-light-text dark:text-dark-text mb-4">エリアで絞り込み</h3>
               {!isReadOnly && (
                 <div className="relative mb-4">
@@ -405,7 +402,16 @@ const Sidebar: React.FC<SidebarProps> = ({
                   検索条件に一致するお店は見つかりませんでした。
                 </p>
               )}
-            </>
+            </div>
+          )}
+        </nav>
+
+      <div className="flex-1 overflow-y-auto -mr-2 pr-2">
+          {showFullContent ? (
+            <div className="flex items-center justify-center h-full flex-col">
+              <MapPinIcon className="w-6 h-6 text-light-text-secondary dark:text-dark-text-secondary" />
+              <span className="text-sm text-light-text-secondary dark:text-dark-text-secondary mt-1">エリアで絞り込み</span>
+            </div>
           ) : (
             <div className="flex items-center justify-center h-full flex-col">
               <MapPinIcon className="w-6 h-6 text-light-text-secondary dark:text-dark-text-secondary" />
