@@ -154,8 +154,11 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
 
 
 
+    let totalInputTokens = 0;
+    let totalOutputTokens = 0;
+
     // executeSearch関数の戻り値の型をより厳密に指定
-    const executeSearch = async (queryText: string, useGoogleSearch: boolean = true): Promise<{ details: RestaurantDetails[]; sources: Source[] }> => {
+    const executeSearch = async (queryText: string, useGoogleSearch: boolean = true): Promise<{ details: RestaurantDetails[]; sources: Source[]; promptTokenCount: number; candidatesTokenCount: number; }> => {
       const model = ai.getGenerativeModel({
         model: "gemini-1.5-flash",
         generationConfig: {
@@ -191,23 +194,29 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
         console.error("Gemini Search - Failed to parse AI response as JSON:", responseText, e);
         parsedResult = { details: [], sources: [] }; // パース失敗時は空の配列を返す
       }
-      return parsedResult;
+      return {
+        ...parsedResult,
+        promptTokenCount: usage?.promptTokenCount || 0,
+        candidatesTokenCount: usage?.candidatesTokenCount || 0,
+      };
     };
 
-    let parsedResult: { details: RestaurantDetails[]; sources: Source[] };
+    let parsedResult: { details: RestaurantDetails[]; sources: Source[]; promptTokenCount: number; candidatesTokenCount: number; };
     let warning: string | undefined;
     let quotaExceededForToday = false; // 新しいフラグを追加
 
     // Google Searchツールを使用して最初の検索を試みる
     try {
       parsedResult = await executeSearch(fullQuery, true); // 常にGoogle Searchツールを有効にして最初の試行
+      totalInputTokens += parsedResult.promptTokenCount;
+      totalOutputTokens += parsedResult.candidatesTokenCount;
     } catch (error: unknown) { // errorの型をunknownに変更し、型ガードを使用
       if (isAPIErrorWithStatus(error) && error.status === 429) {
         console.log("Gemini Search - Quota exceeded for generateContent requests. Cannot perform any more API calls today.");
         quotaExceededForToday = true;
         // APIを再呼び出しせずに、警告メッセージを設定し、空の結果で続行
         warning = "本日のAPI利用制限（1日50リクエスト）に達しました。明日改めてお試しいただくか、Pay-As-You-Goプランへの移行をご検討ください。現在表示される情報はAIの内部知識に基づくもので、正確性や最新性が保証されない場合があります。詳細: https://ai.google.dev/gemini-api/docs/rate-limits";
-        parsedResult = { details: [], sources: [] };
+        parsedResult = { details: [], sources: [], promptTokenCount: 0, candidatesTokenCount: 0 };
       } else {
         // 429以外のエラーはそのままスロー
         throw error;
@@ -226,15 +235,15 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
         parsedResult = await executeSearch(relaxedQuery, true);
         details = parsedResult.details || [];
         sources = parsedResult.sources || [];
-        totalInputTokens += parsedResult.inputTokens;
-        totalOutputTokens += parsedResult.outputTokens;
+        totalInputTokens += parsedResult.promptTokenCount;
+        totalOutputTokens += parsedResult.candidatesTokenCount;
       } catch (error: unknown) { // errorの型をunknownに変更し、型ガードを使用
         if (isAPIErrorWithStatus(error) && error.status === 429) {
           console.log("Gemini Search - Quota exceeded for generateContent requests on relaxed query. Cannot perform any more API calls today.");
           quotaExceededForToday = true; // 再度クォータ超過フラグを立てる
           // APIを再呼び出しせずに、警告メッセージを設定し、空の結果で続行
           warning = "本日のAPI利用制限（1日50リクエスト）に達しました。明日改めてお試しいただくか、Pay-As-You-Goプランへの移行をご検討ください。現在表示される情報はAIの内部知識に基づくもので、正確性や最新性が保証されない場合があります。詳細: https://ai.google.dev/gemini-api/docs/rate-limits";
-          parsedResult = { details: [], sources: [] };
+          parsedResult = { details: [], sources: [], promptTokenCount: 0, candidatesTokenCount: 0 };
           details = []; // 念のため空に設定
           sources = []; // 念のため空に設定
         } else {
@@ -257,8 +266,6 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
       // ソース情報をユニーク化 (重複するURIを排除)
       sources: [...new Set(sources.map(s => JSON.stringify(s)))].map(s => JSON.parse(s)),
       ...(warning && { warning }), // warningがある場合のみ結果に含める
-      inputTokens: totalInputTokens,
-      outputTokens: totalOutputTokens,
     };
 
     // キャッシュに保存
