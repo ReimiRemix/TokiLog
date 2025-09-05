@@ -7,6 +7,7 @@ import RestaurantList from './components/RestaurantList';
 import TimelineView from './components/TimelineView';
 import SearchResultList from './components/SearchResultList';
 import Sidebar from './components/Sidebar';
+import AreaFilterSidebar from './components/AreaFilterSidebar';
 import MenuIcon from './components/icons/MenuIcon';
 import ForkKnifeIcon from './components/icons/ForkKnifeIcon';
 import Login from './components/Login';
@@ -47,6 +48,7 @@ import SettingsPage from './components/SettingsPage';
 import PendingRequestsList from './components/PendingRequestsList';
 import BottomTabBar from './components/BottomTabBar';
 import MonitoringView from './components/MonitoringView';
+import NotificationsView from './components/NotificationsView';
 
 
 import { getFollowersCount, getFollowingCount } from './services/followService';
@@ -105,6 +107,7 @@ const App: React.FC = () => {
     { by: 'createdAt', order: 'desc' },
   ]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isAreaFilterSidebarOpen, setIsAreaFilterSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useLocalStorage('sidebarCollapsed', true);
   const [isManualAddModalOpen, setIsManualAddModalOpen] = useState(false);
   const [isFilterVisible, setIsFilterVisible] = useState(false);
@@ -924,8 +927,26 @@ const App: React.FC = () => {
           isSuperAdmin={userProfile?.is_super_admin || false}
           followersCount={followersCount}
           followingCount={followingCount}
-          onSelectMenuItem={setView}
+          onSelectMenuItem={(selectedView: View | 'notifications') => {
+            if (selectedView === 'areaFilter') {
+              setIsAreaFilterSidebarOpen(prev => !prev);
+            } else {
+              setView(selectedView);
+            }
+          }}
+          onToggleAreaFilter={() => setIsAreaFilterSidebarOpen(!isAreaFilterSidebarOpen)}
           currentView={view}
+        />
+        <AreaFilterSidebar
+          restaurants={isReadOnlyMode ? displayedRestaurants : restaurants}
+          prefectureOrder={prefectureOrder}
+          onFilterChange={setSidebarFilters}
+          onScrollToRestaurant={handleScrollToRestaurant}
+          activeFilter={sidebarFilters}
+          isOpen={isAreaFilterSidebarOpen}
+          onClose={() => setIsAreaFilterSidebarOpen(false)}
+          isReadOnly={isReadOnlyMode}
+          style={{ left: isSidebarCollapsed ? '5rem' : '20rem' }} // 80px = 5rem, 320px = 20rem
         />
         {isSidebarOpen && (
             <div 
@@ -939,6 +960,7 @@ const App: React.FC = () => {
             "flex-1 overflow-y-auto transition-all duration-300 ease-in-out",
             "md:transition-[margin-left]", // Add transition for margin
             isSidebarCollapsed ? "md:ml-20" : "md:ml-80",
+            isAreaFilterSidebarOpen && (isSidebarCollapsed ? "md:ml-[calc(5rem+20rem)]" : "md:ml-[calc(20rem+20rem)]"),
           "pb-16 md:pb-0"
           )}
           onTouchStart={handleTouchStart}
