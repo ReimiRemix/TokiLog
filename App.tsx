@@ -108,7 +108,9 @@ const App: React.FC = () => {
   ]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isAreaFilterSidebarOpen, setIsAreaFilterSidebarOpen] = useState(false);
+  const [isAreaFilterOverlayOpen, setIsAreaFilterOverlayOpen] = useState(false); // New state for mobile overlay
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useLocalStorage('sidebarCollapsed', true);
+  const [isMobile, setIsMobile] = useState(false); // New state for mobile detection
   const [isManualAddModalOpen, setIsManualAddModalOpen] = useState(false);
   const [isFilterVisible, setIsFilterVisible] = useState(false);
   const [theme, setTheme] = useLocalStorage<Theme>('theme', 'dark');
@@ -733,6 +735,13 @@ const App: React.FC = () => {
     }
   }, [view]);
 
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
   // --- Event Handlers ---
   const handleSearch = (query: SearchQuery) => {
     setView('search');
@@ -923,35 +932,56 @@ const App: React.FC = () => {
           onClose={() => setIsSidebarOpen(false)}
           isCollapsed={isSidebarCollapsed}
           isReadOnly={isReadOnlyMode}
+          isMobile={isMobile} // Pass isMobile prop
           userProfile={userProfile}
           isSuperAdmin={userProfile?.is_super_admin || false}
           followersCount={followersCount}
           followingCount={followingCount}
           onSelectMenuItem={(selectedView: View | 'notifications') => {
             if (selectedView === 'areaFilter') {
-              setIsAreaFilterSidebarOpen(prev => !prev);
+              if (isMobile) {
+                setIsAreaFilterOverlayOpen(true);
+                setIsAreaFilterSidebarOpen(false); // Ensure side-by-side is closed
+              } else {
+                setIsAreaFilterSidebarOpen(prev => !prev);
+                setIsAreaFilterOverlayOpen(false); // Ensure overlay is closed
+              }
             } else {
               setView(selectedView);
+              setIsAreaFilterSidebarOpen(false); // Close side-by-side when other menu item is selected
+              setIsAreaFilterOverlayOpen(false); // Close overlay when other menu item is selected
             }
           }}
           onToggleAreaFilter={() => setIsAreaFilterSidebarOpen(!isAreaFilterSidebarOpen)}
           currentView={view}
         />
-        <AreaFilterSidebar
-          restaurants={isReadOnlyMode ? displayedRestaurants : restaurants}
-          prefectureOrder={prefectureOrder}
-          onFilterChange={setSidebarFilters}
-          onScrollToRestaurant={handleScrollToRestaurant}
-          activeFilter={sidebarFilters}
-          isOpen={isAreaFilterSidebarOpen}
-          onClose={() => setIsAreaFilterSidebarOpen(false)}
-          isReadOnly={isReadOnlyMode}
-          style={{ left: isSidebarCollapsed ? '5rem' : '20rem' }} // 80px = 5rem, 320px = 20rem
-        />
-        {isSidebarOpen && (
+        {(isAreaFilterSidebarOpen || isAreaFilterOverlayOpen) && (
+          <AreaFilterSidebar
+            restaurants={isReadOnlyMode ? displayedRestaurants : restaurants}
+            prefectureOrder={prefectureOrder}
+            onFilterChange={setSidebarFilters}
+            onScrollToRestaurant={handleScrollToRestaurant}
+            activeFilter={sidebarFilters}
+            isOpen={isAreaFilterSidebarOpen || isAreaFilterOverlayOpen} // Open if either is true
+                      onClose={() => {
+                        if (isMobile) {
+                          setIsAreaFilterOverlayOpen(false);
+                          setIsSidebarOpen(true); // Return to main sidebar on mobile
+                                    } else {
+                                      setIsAreaFilterSidebarOpen(false);
+                                      setIsSidebarOpen(false); // Close main sidebar on desktop
+                                    }                        setSidebarFilters([]); // Clear active filters when closing
+                        setView('favorites'); // Set view to favorites to clear area filter selection
+                      }}            isReadOnly={isReadOnlyMode}
+            isMobile={isMobile}
+            isOverlayMode={isAreaFilterOverlayOpen} // New prop
+            style={isMobile ? {} : { left: isSidebarCollapsed ? '5rem' : '20rem' }} // Apply style only for desktop
+          />
+        )}
+        {isAreaFilterOverlayOpen && (
             <div 
-                className="fixed inset-0 bg-black/50 z-40 md:hidden" 
-                onClick={() => setIsSidebarOpen(false)}
+                className="fixed inset-0 bg-black/50 z-50 md:hidden" 
+                onClick={() => setIsAreaFilterOverlayOpen(false)}
                 aria-hidden="true"
             />
         )}
