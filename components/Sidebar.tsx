@@ -21,7 +21,7 @@ import ActivityIcon from './icons/ActivityIcon';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 
 type MenuItem = {
-  id: View | 'settings' | 'pendingRequests'; // Add 'pendingRequests' to View type for internal use
+  id: View | 'settings' | 'notifications'; // Add 'notifications' to View type for internal use
   label: string;
   icon: React.ComponentType<any>;
 };
@@ -31,7 +31,7 @@ const defaultMenuItems: MenuItem[] = [
   { id: 'search', label: 'お店を探す', icon: SearchIcon },
   { id: 'userSearch', label: 'ユーザーを探す', icon: UsersIcon },
   
-  { id: 'pendingRequests', label: '保留中リクエスト', icon: BellIcon }, // New menu item
+  { id: 'notifications', label: '通知', icon: BellIcon }, // New menu item
   { id: 'map', label: 'マップ', icon: MapIcon },
   { id: 'analysis', label: 'AIに相談', icon: SparklesIcon },
   { id: 'settings', label: '設定', icon: SettingsIcon },
@@ -47,7 +47,7 @@ interface SidebarProps {
   onClose: () => void;
   isCollapsed: boolean;
   isReadOnly: boolean;
-  onSelectMenuItem: (viewId: View | 'pendingRequests') => void; // Update type here
+  onSelectMenuItem: (viewId: View | 'notifications') => void; // Update type here
   currentView: View;
   userProfile: UserProfile | null;
   followersCount: number;
@@ -79,7 +79,6 @@ const Sidebar: React.FC<SidebarProps> = ({
   const menuItems = useMemo(() => {
     const items = [...defaultMenuItems];
     if (isSuperAdmin) {
-      items.push({ id: 'admin_user_management', label: 'ユーザー管理', icon: UsersIcon });
       items.push({ id: 'monitoring', label: '監視', icon: ActivityIcon });
     }
     return items;
@@ -99,22 +98,17 @@ const Sidebar: React.FC<SidebarProps> = ({
     // Synchronize menu items with admin status
     setOrderedMenuItems(prevItems => {
       let newItems = [...prevItems];
-      const hasUserManagement = newItems.some(item => item.id === 'admin_user_management');
       const hasMonitoring = newItems.some(item => item.id === 'monitoring');
 
       let changed = false; // Flag to track if changes occurred
 
       if (isSuperAdmin) {
-        if (!hasUserManagement) {
-          newItems.push({ id: 'admin_user_management', label: 'ユーザー管理', icon: UsersIcon });
-          changed = true;
-        }
         if (!hasMonitoring) {
           newItems.push({ id: 'monitoring', label: '監視', icon: ActivityIcon });
           changed = true;
         }
       } else {
-        const filteredItems = newItems.filter(item => item.id !== 'admin_user_management' && item.id !== 'monitoring');
+        const filteredItems = newItems.filter(item => item.id !== 'monitoring');
         if (filteredItems.length !== newItems.length) { // Check if any items were filtered out
           newItems = filteredItems;
           changed = true;
@@ -271,13 +265,15 @@ const Sidebar: React.FC<SidebarProps> = ({
       )}
 
       {!isReadOnly && (
-        <nav className="flex-1 overflow-y-auto -mr-2 pr-2 mb-4 border-b border-light-border dark:border-dark-border pb-4">
+        <nav className="flex-1 -mr-2 pr-2 mb-4 border-b border-light-border dark:border-dark-border pb-4">
           <ul className="space-y-1">
             {orderedMenuItems.map((item, index) => (
               <li key={item.id} className="flex items-center group">
                 <button
                   onClick={() => {
-                    onSelectMenuItem(item.id as View);
+                    // item.id が 'admin_user_management' の場合は 'settings' に変換
+                    const targetView = item.id === 'admin_user_management' ? 'settings' : item.id;
+                    onSelectMenuItem(targetView as View); // View 型にキャスト
                     onClose();
                   }}
                   className={twMerge(
@@ -300,7 +296,7 @@ const Sidebar: React.FC<SidebarProps> = ({
       <div className="flex-1 overflow-y-auto -mr-2 pr-2">
           {showFullContent ? (
             <>
-              <h3 className="text-lg font-semibold text-light-text dark:text-dark-text mb-3">エリアで絞り込み</h3>
+              <h3 className="text-lg font-semibold text-light-text dark:text-dark-text mb-4">エリアで絞り込み</h3>
               {!isReadOnly && (
                 <div className="relative mb-4">
                   <input

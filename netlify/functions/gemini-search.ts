@@ -78,6 +78,26 @@ function isAPIErrorWithStatus(error: unknown): error is APIErrorWithStatus {
   return typeof error === 'object' && error !== null && 'status' in error && typeof (error as any).status === 'number';
 }
 
+// log-api-usage関数を呼び出すヘルパー関数
+async function logApiUsage(userId: string | undefined, apiType: string, inputTokens?: number, outputTokens?: number) {
+  if (!userId) {
+    console.warn("User ID is undefined, cannot log API usage.");
+    return;
+  }
+  try {
+    await fetch(`${process.env.URL}/.netlify/functions/log-api-usage`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${userId}`, // 認証はユーザーIDを使用
+      },
+      body: JSON.stringify({ api_type: apiType, input_tokens: inputTokens, output_tokens: outputTokens }),
+    });
+  } catch (error) {
+    console.error("Failed to log API usage:", error);
+  }
+}
+
 const handler: Handler = async (event: HandlerEvent, context: HandlerContext) => {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: JSON.stringify({ error: "Method Not Allowed" }) };
@@ -148,6 +168,13 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
       const result = await model.generateContent({
         contents: [{ role: "user", parts: [{ text: prompt.replace(fullQuery, queryText) } as Part] }],
       });
+
+      // トークン使用量をログに記録
+      const usage = result.response.usageMetadata;
+      if (usage) {
+        const userId = event.headers['x-netlify-identity-user-id']; // Netlify IdentityからユーザーIDを取得
+        await logApiUsage(userId, 'gemini-search', usage.promptTokenCount, usage.candidatesTokenCount);
+      }
 
       const responseText = result.response.text();
       console.log("Gemini Search - Raw AI response text:", responseText);

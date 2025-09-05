@@ -1,6 +1,6 @@
 
 
-export type View = 'favorites' | 'search' | 'map' | 'analysis' | 'userSearch' | 'followed' | 'timeline' | 'areaList' | 'followers' | 'settings' | 'pendingRequests' | 'admin_user_management' | 'monitoring';
+export type View = 'favorites' | 'search' | 'map' | 'analysis' | 'userSearch' | 'followed' | 'timeline' | 'areaList' | 'followers' | 'settings' | 'notifications' | 'admin_user_management' | 'monitoring';
 export type SidebarFilter = { type: 'prefecture' | 'city'; value: string };
 
 export interface Source {
@@ -109,6 +109,7 @@ export interface Notification {
   restaurant_name?: string;
   message?: string; // カスタムメッセージ
   is_read: boolean;
+  request_id?: string; // フォローリクエストのID
 }
 
 // For Chat with AI

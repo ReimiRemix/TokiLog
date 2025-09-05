@@ -3,10 +3,14 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../supabaseClient';
 import type { Notification } from '../types';
 import { twMerge } from 'tailwind-merge';
+import CheckIcon from './icons/CheckIcon';
+import XIcon from './icons/XIcon';
 
 interface NotificationCardProps {
   notification: Notification;
   onClick: () => void;
+  onAcceptFollowRequest?: (requestId: string) => void;
+  onRejectFollowRequest?: (requestId: string) => void;
 }
 
 const NotificationCard: React.FC<NotificationCardProps> = ({ notification, onClick }) => {
@@ -62,6 +66,22 @@ const NotificationCard: React.FC<NotificationCardProps> = ({ notification, onCli
       <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary mt-1">
         {new Date(notification.created_at).toLocaleString('ja-JP')}
       </p>
+      {notification.type === 'follow_request' && notification.request_id && (
+        <div className="flex space-x-2 mt-2">
+          <button
+            onClick={(e) => { e.stopPropagation(); onAcceptFollowRequest?.(notification.request_id!); }}
+            className="bg-green-500 text-white p-2 rounded-full hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <CheckIcon className="w-5 h-5" />
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); onRejectFollowRequest?.(notification.request_id!); }}
+            className="bg-red-500 text-white p-2 rounded-full hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <XIcon className="w-5 h-5" />
+          </button>
+        </div>
+      )}
     </div>
   );
 };

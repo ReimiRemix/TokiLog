@@ -46,7 +46,6 @@ import MapIcon from './components/icons/MapIcon';
 import SettingsPage from './components/SettingsPage';
 import PendingRequestsList from './components/PendingRequestsList';
 import BottomTabBar from './components/BottomTabBar';
-import AdminPage from './components/AdminPage';
 import MonitoringView from './components/MonitoringView';
 
 
@@ -1359,10 +1358,6 @@ const App: React.FC = () => {
               )}
               {view === 'settings' && !isReadOnlyMode && (
                 <SettingsPage />
-              )}
-
-              {view === 'admin_user_management' && !isReadOnlyMode && userProfile?.is_super_admin && (
-                <AdminPage />
               )}
 
               {view === 'monitoring' && !isReadOnlyMode && userProfile?.is_super_admin && (

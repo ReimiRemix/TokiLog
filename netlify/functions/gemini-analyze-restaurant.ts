@@ -2,6 +2,26 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import type { Handler, HandlerEvent } from "@netlify/functions";
 import type { HotpepperRestaurant } from "../../types";
 
+// log-api-usage関数を呼び出すヘルパー関数
+async function logApiUsage(userId: string | undefined, apiType: string, inputTokens?: number, outputTokens?: number) {
+  if (!userId) {
+    console.warn("User ID is undefined, cannot log API usage.");
+    return;
+  }
+  try {
+    await fetch(`${process.env.URL}/.netlify/functions/log-api-usage`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${userId}`, // 認証はユーザーIDを使用
+      },
+      body: JSON.stringify({ api_type: apiType, input_tokens: inputTokens, output_tokens: outputTokens }),
+    });
+  } catch (error) {
+    console.error("Failed to log API usage:", error);
+  }
+}
+
 const handler: Handler = async (event: HandlerEvent) => {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method Not Allowed' }) };
@@ -41,6 +61,13 @@ const handler: Handler = async (event: HandlerEvent) => {
     const response = result.response;
 
     const comment = response.text();
+
+    // トークン使用量をログに記録
+    const usage = result.response.usageMetadata;
+    if (usage) {
+      const userId = event.headers['x-netlify-identity-user-id']; // Netlify IdentityからユーザーIDを取得
+      await logApiUsage(userId, 'gemini-analyze-restaurant', usage.promptTokenCount, usage.candidatesTokenCount);
+    }
     
     return {
       statusCode: 200,

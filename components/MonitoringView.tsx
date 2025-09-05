@@ -1,9 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import LoadingSpinner from './icons/LoadingSpinner';
+
+// Gemini API の利用状況データの型定義
+interface GeminiApiUsage {
+  api_type: string;
+  total_input_tokens: number;
+  total_output_tokens: number;
+  total_requests: number;
+}
 
 const MonitoringView: React.FC = () => {
   const [supabaseUsage, setSupabaseUsage] = useState<any>(null);
-  const [geminiUsage, setGeminiUsage] = useState<any[]>([]);
+  const [geminiUsage, setGeminiUsage] = useState<GeminiApiUsage[]>([]); // 型を変更
   const [netlifyUsage, setNetlifyUsage] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -23,7 +31,7 @@ const MonitoringView: React.FC = () => {
         }
 
         if (geminiResponse.ok) {
-          const geminiData = await geminiResponse.json();
+          const geminiData: GeminiApiUsage[] = await geminiResponse.json(); // 型アサーション
           setGeminiUsage(geminiData);
         }
 
@@ -51,6 +59,20 @@ const MonitoringView: React.FC = () => {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
   }
+
+  // Geminiトークン使用量の合計を計算
+  const totalGeminiInputTokens = useMemo(() => {
+    return geminiUsage.reduce((sum, item) => sum + (item.total_input_tokens || 0), 0);
+  }, [geminiUsage]);
+
+  const totalGeminiOutputTokens = useMemo(() => {
+    return geminiUsage.reduce((sum, item) => sum + (item.total_output_tokens || 0), 0);
+  }, [geminiUsage]);
+
+  const totalGeminiTokens = useMemo(() => {
+    return totalGeminiInputTokens + totalGeminiOutputTokens;
+  }, [totalGeminiInputTokens, totalGeminiOutputTokens]);
+
 
   return (
     <div className="bg-light-card dark:bg-dark-card p-6 rounded-ui-medium shadow-soft border border-light-border dark:border-dark-border">
@@ -82,8 +104,10 @@ const MonitoringView: React.FC = () => {
         </div>
         <div className="p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
           <h4 className="font-semibold">Gemini API</h4>
-          <p className="text-sm text-gray-600 dark:text-gray-400">今日の利用回数</p>
-          <p className="text-2xl font-bold">{geminiUsage[0]?.usage_count || 0}</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400">今日のトークン利用量</p>
+          <p className="text-xl font-bold">合計: {totalGeminiTokens}</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400">入力: {totalGeminiInputTokens}</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400">出力: {totalGeminiOutputTokens}</p>
         </div>
         <div className="p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
           <h4 className="font-semibold">Supabase</h4>

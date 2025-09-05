@@ -16,7 +16,7 @@ const handler: Handler = async (event: HandlerEvent) => {
   const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
   try {
-    const { api_type } = JSON.parse(event.body || '{}');
+    const { api_type, input_tokens, output_tokens } = JSON.parse(event.body || '{}');
     if (!api_type) {
       return { statusCode: 400, body: JSON.stringify({ error: 'api_type is required' }) };
     }
@@ -29,7 +29,7 @@ const handler: Handler = async (event: HandlerEvent) => {
     const token = authHeader.split(' ')[1];
     const { data: { user } } = await supabaseAdmin.auth.getUser(token);
 
-    const { error } = await supabaseAdmin.from('api_usage_logs').insert({ user_id: user?.id, api_type });
+    const { error } = await supabaseAdmin.from('api_usage_logs').insert({ user_id: user?.id, api_type, input_tokens, output_tokens });
 
     if (error) {
       throw error;
