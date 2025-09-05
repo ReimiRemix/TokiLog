@@ -31,3 +31,16 @@ root.render(
     </BrowserRouter>
   </React.StrictMode>
 );
+
+// --- Service Worker Cleanup ---
+// Forcefully unregister any existing service workers to prevent stale cache issues.
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.getRegistrations().then(function(registrations) {
+    for(const registration of registrations) {
+      registration.unregister();
+      console.log('Stale service worker unregistered.');
+    }
+  }).catch(function(err) {
+    console.error('Service Worker unregistration failed: ', err);
+  });
+}

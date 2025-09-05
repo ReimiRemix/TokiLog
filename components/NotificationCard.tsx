@@ -9,13 +9,11 @@ import XIcon from './icons/XIcon';
 interface NotificationCardProps {
   notification: Notification;
   onClick: () => void;
-  onAcceptFollowRequest?: (requestId: string) => void;
-  onRejectFollowRequest?: (requestId: string) => void;
+  onAcceptFollowRequest?: (notification: Notification) => void;
+  onRejectFollowRequest?: (notification: Notification) => void;
 }
 
 const NotificationCard: React.FC<NotificationCardProps> = ({ notification, onClick, onAcceptFollowRequest, onRejectFollowRequest }) => {
-  console.log('Inspecting notification object:', notification);
-
   const { data: fromUserProfile } = useQuery({
     queryKey: ['userProfile', notification.from_user_id],
     queryFn: async () => {
@@ -71,13 +69,13 @@ const NotificationCard: React.FC<NotificationCardProps> = ({ notification, onCli
       {notification.type === 'follow_request' && notification.follow_request_id && (
         <div className="flex space-x-2 mt-2">
           <button
-            onClick={(e) => { e.stopPropagation(); onAcceptFollowRequest?.(notification.follow_request_id!); }}
+            onClick={(e) => { e.stopPropagation(); onAcceptFollowRequest?.(notification); }}
             className="bg-green-500 text-white p-2 rounded-full hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <CheckIcon className="w-5 h-5" />
           </button>
           <button
-            onClick={(e) => { e.stopPropagation(); onRejectFollowRequest?.(notification.follow_request_id!); }}
+            onClick={(e) => { e.stopPropagation(); onRejectFollowRequest?.(notification); }}
             className="bg-red-500 text-white p-2 rounded-full hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <XIcon className="w-5 h-5" />

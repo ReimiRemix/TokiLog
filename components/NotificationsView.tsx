@@ -46,18 +46,27 @@ const NotificationsView: React.FC = () => {
   });
 
   const acceptMutation = useMutation({
-    mutationFn: async (requestId: string) => {
-      const { error } = await supabase
+    mutationFn: async (notification: Notification) => {
+      if (!notification.follow_request_id) throw new Error('Invalid notification for this action');
+
+      // 1. Accept the follow request
+      const { error: acceptError } = await supabase
         .from('follow_relationships')
         .update({ status: 'accepted', updated_at: new Date().toISOString() })
-        .eq('id', requestId);
-        
-      if (error) throw error;
+        .eq('id', notification.follow_request_id);
+      if (acceptError) throw acceptError;
+
+      // 2. Delete the notification
+      const { error: deleteError } = await supabase
+        .from('notifications')
+        .delete()
+        .eq('id', notification.id);
+      if (deleteError) throw deleteError;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
       queryClient.invalidateQueries({ queryKey: ['followers'] });
-      queryClient.invalidateQueries({ queryKey: ['sentFollowRequests'] }); // Invalidate sent requests too
+      queryClient.invalidateQueries({ queryKey: ['sentFollowRequests'] });
       alert('フォローリクエストを承認しました！');
     },
     onError: (err: any) => {
@@ -67,13 +76,22 @@ const NotificationsView: React.FC = () => {
   });
 
   const rejectMutation = useMutation({
-    mutationFn: async (requestId: string) => {
-      const { error } = await supabase
+    mutationFn: async (notification: Notification) => {
+      if (!notification.follow_request_id) throw new Error('Invalid notification for this action');
+
+      // 1. Reject (delete) the follow request
+      const { error: rejectError } = await supabase
         .from('follow_relationships')
         .delete()
-        .eq('id', requestId);
+        .eq('id', notification.follow_request_id);
+      if (rejectError) throw rejectError;
 
-      if (error) throw error;
+      // 2. Delete the notification
+      const { error: deleteError } = await supabase
+        .from('notifications')
+        .delete()
+        .eq('id', notification.id);
+      if (deleteError) throw deleteError;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
