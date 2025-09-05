@@ -7,6 +7,7 @@ import type { Theme } from '../App';
 import SettingsIcon from './icons/SettingsIcon';
 import RefreshPageIcon from './icons/RefreshPageIcon';
 import LogOutIcon from './icons/LogOutIcon';
+import TrashIcon from './icons/TrashIcon'; // アイコンをインポート
 import ThemeToggle from './ThemeToggle';
 import { twMerge } from 'tailwind-merge';
 import ConfirmationModal from './ConfirmationModal';
@@ -117,6 +118,22 @@ const HeaderActionsMenu: React.FC<HeaderActionsMenuProps> = ({ user, onScrollToR
         }
     };
 
+    const handleForceCacheClear = () => {
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                for(const registration of registrations) {
+                    registration.unregister();
+                }
+                alert('キャッシュをクリアしました。ページをリロードします。');
+                window.location.reload(true);
+            }).catch(function(err) {
+                alert('キャッシュのクリアに失敗しました: ' + err.message);
+            });
+        } else {
+            alert('このブラウザはService Workerをサポートしていません。');
+        }
+    };
+
     return (
         <div className="relative" ref={dropdownRef}>
             <button onClick={() => setIsOpen(!isOpen)} className="relative p-2 text-light-text-secondary dark:text-dark-text-secondary hover:text-light-text dark:hover:text-dark-text rounded-full hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors">
@@ -159,6 +176,10 @@ const HeaderActionsMenu: React.FC<HeaderActionsMenuProps> = ({ user, onScrollToR
                         <button onClick={() => window.location.reload()} className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md text-light-text-secondary dark:text-dark-text-secondary hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors">
                             <RefreshPageIcon />
                             <span>ページを更新</span>
+                        </button>
+                        <button onClick={handleForceCacheClear} className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md text-red-500 hover:bg-red-100 dark:hover:bg-red-800/50 transition-colors">
+                            <TrashIcon />
+                            <span>強制キャッシュクリア</span>
                         </button>
                         <button onClick={onLogout} className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium rounded-md text-light-text-secondary dark:text-dark-text-secondary hover:bg-slate-100 dark:hover:bg-slate-700/50 transition-colors">
                             <LogOutIcon />
