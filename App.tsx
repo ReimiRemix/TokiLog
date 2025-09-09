@@ -136,6 +136,56 @@ const App: React.FC = () => {
   
   const [geocodingAddress, setGeocodingAddress] = useState<string | null>(null);
 
+  const { data: notifications = [] } = useQuery({
+      queryKey: ['notifications', user?.id],
+      queryFn: async () => {
+          if (!user?.id) return [];
+          const { data, error } = await supabase
+              .from('notifications')
+              .select('*')
+              .eq('user_id', user.id)
+              .order('created_at', { ascending: false })
+              .limit(20);
+          if (error) throw new Error(error.message);
+          return data as Notification[];
+      },
+      enabled: !!user,
+  });
+
+  useEffect(() => {
+      if (!user) return;
+
+      const channel = supabase
+          .channel(`notifications:user_id=eq.${user.id}`)
+          .on(
+              'postgres_changes',
+              {
+                  event: 'INSERT',
+                  schema: 'public',
+                  table: 'notifications',
+                  filter: `user_id=eq.${user.id}`,
+                              },
+                              () => {
+                                  console.log('[Debug][Realtime] Received INSERT event on notifications table!');
+                                  queryClient.invalidateQueries({ queryKey: ['notifications', user.id] });
+                              }          )
+          .subscribe();
+
+      return () => {
+          supabase.removeChannel(channel);
+      };
+  }, [user, queryClient]);
+
+  useEffect(() => {
+    console.log('[Debug] Notifications data updated:', notifications);
+  }, [notifications]);
+
+  const unreadNotificationCount = useMemo(() => {
+    const count = notifications.filter(n => !n.is_read).length;
+    console.log('[Debug] Unread count calculated:', count);
+    return count;
+  }, [notifications]);
+
   const touchStartX = useRef<number | null>(null);
   const SWIPE_THRESHOLD = 75; // pixels
   const SWIPE_EDGE_WIDTH = 50; // pixels from the left edge
@@ -947,7 +997,7 @@ const App: React.FC = () => {
             onToggleAreaFilter={() => {
               setIsAreaFilterSidebarOpen(prev => !prev);
             }}
-            currentView={view}
+            unreadNotificationCount={unreadNotificationCount}
           />
         )}
         {isSidebarOpen && isMobile && (
@@ -1016,7 +1066,6 @@ const App: React.FC = () => {
                     {!isReadOnlyMode && user && (
                       <HeaderActionsMenu 
                         user={user} 
-                        onScrollToRestaurant={handleScrollToRestaurant}
                         theme={theme}
                         setTheme={setTheme}
                         onLogout={handleLogout}
@@ -1409,7 +1458,7 @@ const App: React.FC = () => {
                 }} />
               )}
               {view === 'notifications' && !isReadOnlyMode && (
-                <NotificationsView />
+                <NotificationsView notifications={notifications} />
               )}
               {view === 'settings' && !isReadOnlyMode && (
                 <SettingsPage />

@@ -8,7 +8,11 @@ import { getSentFollowRequests, SentFollowRequest } from '../services/followServ
 import CheckIcon from './icons/CheckIcon';
 import XIcon from './icons/XIcon';
 
-const NotificationsView: React.FC = () => {
+interface NotificationsViewProps {
+  notifications: Notification[];
+}
+
+const NotificationsView: React.FC<NotificationsViewProps> = ({ notifications }) => {
   const queryClient = useQueryClient();
   const { data: currentUser } = useQuery({
     queryKey: ['currentUser'],
@@ -17,24 +21,6 @@ const NotificationsView: React.FC = () => {
       return user;
     },
     staleTime: Infinity, // We don't need to refetch the user frequently
-  });
-
-  // Fetch all notifications for the current user
-  const { data: notifications, isLoading: isLoadingNotifications, error: errorNotifications } = useQuery<Notification[]> ({
-    queryKey: ['notifications', currentUser?.id],
-    queryFn: async () => {
-      if (!currentUser) return [];
-      const { data, error } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('user_id', currentUser.id)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      return data;
-    },
-    enabled: !!currentUser,
-    refetchOnMount: 'always',
   });
 
   // Fetch sent follow requests
@@ -123,17 +109,13 @@ const NotificationsView: React.FC = () => {
     },
   });
 
-  if (isLoadingNotifications || isLoadingSent) {
+  if (isLoadingSent) {
     return (
       <div className="flex justify-center items-center p-4">
         <LoadingSpinner />
         <span className="ml-2 text-light-text dark:text-dark-text">通知を読み込み中...</span>
       </div>
     );
-  }
-
-  if (errorNotifications) {
-    return <div className="text-red-500 p-4">通知の読み込みエラー: {errorNotifications.message}</div>;
   }
 
   if (errorSent) {

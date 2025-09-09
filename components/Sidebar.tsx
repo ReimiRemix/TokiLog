@@ -55,6 +55,7 @@ interface SidebarProps {
   followersCount: number;
   followingCount: number;
   isSuperAdmin: boolean;
+  unreadNotificationCount: number;
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -75,8 +76,9 @@ const Sidebar: React.FC<SidebarProps> = ({
   followersCount,
   followingCount,
   isSuperAdmin,
+  unreadNotificationCount,
 }) => {
-  console.log('Sidebar.tsx - isSuperAdmin prop:', isSuperAdmin);
+  console.log('[Debug][Sidebar] Received unreadNotificationCount:', unreadNotificationCount);
   const [searchQuery, setSearchQuery] = useState('');
   const [expanded, setExpanded] = useState<{ [key: string]: boolean }>({});
 
@@ -249,7 +251,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                     }
                   }}
                   className={twMerge(
-                    "flex-1 flex items-center rounded-md text-sm font-medium transition-colors",
+                    "flex-1 flex items-center rounded-md text-sm font-medium transition-colors w-full",
                     showFullContent ? "gap-3 px-3 py-2" : "justify-center px-0 py-2", // Adjusted for collapsed state
                     currentView === item.id
                       ? "bg-light-primary-soft-bg text-light-primary dark:bg-dark-primary-soft-bg dark:text-dark-primary"
@@ -257,7 +259,12 @@ const Sidebar: React.FC<SidebarProps> = ({
                   )}
                 >
                   {item.icon && <item.icon className="w-5 h-5" />}
-                  {showFullContent && <span>{item.label}</span>}
+                  {showFullContent && <span className="flex-grow text-left">{item.label}</span>}
+                  {showFullContent && item.id === 'notifications' && unreadNotificationCount > 0 && (
+                    <span className="ml-auto text-xs font-semibold bg-red-500 text-white rounded-full px-2 py-0.5">
+                      {unreadNotificationCount}
+                    </span>
+                  )}
                 </button>
               </li>
             ))}
