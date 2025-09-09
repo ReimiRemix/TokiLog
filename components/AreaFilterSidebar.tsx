@@ -110,7 +110,7 @@ const AreaFilterSidebar: React.FC<AreaFilterSidebarProps> = ({
       className={twMerge(
         "fixed inset-y-0 h-full bg-light-card dark:bg-dark-card border-r border-light-border dark:border-dark-border p-4 flex flex-col",
         "transform transition-transform duration-300 ease-in-out",
-        isOverlayMode ? "inset-0 z-40" : "z-40 w-80", // Overlay vs. Side-by-side styling
+        isOverlayMode ? "inset-0 z-50" : "z-40 w-80", // Overlay vs. Side-by-side styling
         isOpen ? "translate-x-0" : "-translate-x-full", // Always controlled by isOpen
       )}
       style={isOverlayMode ? {} : style} // Apply style prop only for non-overlay mode
@@ -135,7 +135,7 @@ const AreaFilterSidebar: React.FC<AreaFilterSidebarProps> = ({
           </div>
         </div>
       )}
-      <div className="flex-1 overflow-y-auto -mr-4 pr-4">
+      <div className="flex-1 overflow-y-auto -mr-4 pr-4 pb-20 md:pb-4">
         {filteredPrefectures.length > 0 ? (
           <ul className="space-y-1">
             {filteredPrefectures.map((prefecture) => {

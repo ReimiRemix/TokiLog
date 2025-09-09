@@ -108,7 +108,6 @@ const App: React.FC = () => {
   ]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isAreaFilterSidebarOpen, setIsAreaFilterSidebarOpen] = useState(false);
-  const [isAreaFilterOverlayOpen, setIsAreaFilterOverlayOpen] = useState(false); // New state for mobile overlay
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useLocalStorage('sidebarCollapsed', true);
   const [isMobile, setIsMobile] = useState(false); // New state for mobile detection
   const [isManualAddModalOpen, setIsManualAddModalOpen] = useState(false);
@@ -840,6 +839,12 @@ const App: React.FC = () => {
     createShareLinkMutation.mutate(activeFilters as any);
   };
 
+  const handleCloseAreaFilter = () => {
+    setIsAreaFilterSidebarOpen(false);
+    setSidebarFilters([]);
+    setView('favorites');
+  };
+
   // --- Display State ---
   const [displayedRestaurants, setDisplayedRestaurants] = useState<Restaurant[]>([]);
 
@@ -917,81 +922,79 @@ const App: React.FC = () => {
 
   return (
     <>
-      
-      
-      
       {isReadOnlyMode && showReadOnlyBanner && !shareId && <ReadOnlyBanner isFiltered={!!lockedFilters} />}
       <div className={`flex h-screen ${isReadOnlyMode ? 'pt-10' : ''}`}>
-        <Sidebar
-          restaurants={isReadOnlyMode ? displayedRestaurants : restaurants}
-          prefectureOrder={prefectureOrder}
-          onFilterChange={setSidebarFilters}
-          onScrollToRestaurant={handleScrollToRestaurant}
-          activeFilter={sidebarFilters}
-          isOpen={isSidebarOpen}
-          onClose={() => setIsSidebarOpen(false)}
-          isCollapsed={isSidebarCollapsed}
-          isReadOnly={isReadOnlyMode}
-          isMobile={isMobile} // Pass isMobile prop
-          userProfile={userProfile}
-          isSuperAdmin={userProfile?.is_super_admin || false}
-          followersCount={followersCount}
-          followingCount={followingCount}
-          onSelectMenuItem={(selectedView: View | 'notifications') => {
-            if (selectedView === 'areaFilter') {
-              if (isMobile) {
-                setIsAreaFilterOverlayOpen(true);
-                setIsAreaFilterSidebarOpen(false); // Ensure side-by-side is closed
-              } else {
-                setIsAreaFilterSidebarOpen(prev => !prev);
-                setIsAreaFilterOverlayOpen(false); // Ensure overlay is closed
-              }
-            } else {
-              setView(selectedView);
-              setIsAreaFilterSidebarOpen(false); // Close side-by-side when other menu item is selected
-              setIsAreaFilterOverlayOpen(false); // Close overlay when other menu item is selected
-            }
-          }}
-          onToggleAreaFilter={() => setIsAreaFilterSidebarOpen(!isAreaFilterSidebarOpen)}
-          currentView={view}
-        />
-        {(isAreaFilterSidebarOpen || isAreaFilterOverlayOpen) && (
-          <AreaFilterSidebar
+        {!isReadOnlyMode && (
+          <Sidebar
             restaurants={isReadOnlyMode ? displayedRestaurants : restaurants}
             prefectureOrder={prefectureOrder}
             onFilterChange={setSidebarFilters}
             onScrollToRestaurant={handleScrollToRestaurant}
             activeFilter={sidebarFilters}
-            isOpen={isAreaFilterSidebarOpen || isAreaFilterOverlayOpen} // Open if either is true
-                      onClose={() => {
-                        if (isMobile) {
-                          setIsAreaFilterOverlayOpen(false);
-                          setIsSidebarOpen(true); // Return to main sidebar on mobile
-                                    } else {
-                                      setIsAreaFilterSidebarOpen(false);
-                                      setIsSidebarOpen(false); // Close main sidebar on desktop
-                                    }                        setSidebarFilters([]); // Clear active filters when closing
-                        setView('favorites'); // Set view to favorites to clear area filter selection
-                      }}            isReadOnly={isReadOnlyMode}
+            isOpen={isSidebarOpen}
+            onClose={() => setIsSidebarOpen(false)}
+            isCollapsed={isSidebarCollapsed}
+            isReadOnly={isReadOnlyMode}
             isMobile={isMobile}
-            isOverlayMode={isAreaFilterOverlayOpen} // New prop
-            style={isMobile ? {} : { left: isSidebarCollapsed ? '5rem' : '20rem' }} // Apply style only for desktop
+            userProfile={userProfile}
+            isSuperAdmin={userProfile?.is_super_admin || false}
+            followersCount={followersCount}
+            followingCount={followingCount}
+            onSelectMenuItem={(selectedView: View | 'notifications') => {
+              setView(selectedView as View);
+              setIsAreaFilterSidebarOpen(false);
+            }}
+            onToggleAreaFilter={() => {
+              setIsAreaFilterSidebarOpen(prev => !prev);
+            }}
+            currentView={view}
           />
         )}
-        {isAreaFilterOverlayOpen && (
-            <div 
-                className="fixed inset-0 bg-black/50 z-50 md:hidden" 
-                onClick={() => setIsAreaFilterOverlayOpen(false)}
-                aria-hidden="true"
-            />
+        {isSidebarOpen && isMobile && (
+          <div
+            className="fixed inset-0 bg-black/50 z-40"
+            onClick={() => setIsSidebarOpen(false)}
+            aria-hidden="true"
+          />
         )}
-        <main 
+                {isAreaFilterSidebarOpen && (
+                  <>
+                    <AreaFilterSidebar
+                      restaurants={isReadOnlyMode ? displayedRestaurants : restaurants}
+                      prefectureOrder={prefectureOrder}
+                      onFilterChange={setSidebarFilters}
+                      onScrollToRestaurant={handleScrollToRestaurant}
+                      activeFilter={sidebarFilters}
+                      isOpen={isAreaFilterSidebarOpen}
+                      onClose={handleCloseAreaFilter}
+                      isReadOnly={isReadOnlyMode}
+                      isMobile={isMobile}
+                      isOverlayMode={isMobile}
+                      style={isMobile ? {} : { left: isSidebarCollapsed ? '5rem' : '20rem' }}
+                    />
+                    {isMobile && (
+                      <div
+                        className="fixed inset-0 bg-black/50 z-40"
+                        onClick={handleCloseAreaFilter}
+                        aria-hidden="true"
+                      />
+                    )}
+                  </>
+                )}        <main 
           className={twMerge(
             "flex-1 overflow-y-auto transition-all duration-300 ease-in-out",
-            "md:transition-[margin-left]", // Add transition for margin
-            isSidebarCollapsed ? "md:ml-20" : "md:ml-80",
-            isAreaFilterSidebarOpen && (isSidebarCollapsed ? "md:ml-[calc(5rem+20rem)]" : "md:ml-[calc(20rem+20rem)]"),
-          "pb-16 md:pb-0"
+            "md:transition-[margin-left]",
+            isReadOnlyMode
+              ? "md:ml-0"
+              : isSidebarCollapsed
+              ? "md:ml-20"
+              : "md:ml-80",
+            isAreaFilterSidebarOpen &&
+              !isReadOnlyMode &&
+              (isSidebarCollapsed
+                ? "md:ml-[calc(5rem+20rem)]"
+                : "md:ml-[calc(20rem+20rem)]"),
+            "pb-16 md:pb-0"
           )}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}

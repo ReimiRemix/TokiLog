@@ -15,7 +15,7 @@ export const useLocalStorage = <T,>(key: string, initialValue: T): [T, React.Dis
       console.warn(`Error reading localStorage key “${key}”:`, error);
       return initialValue;
     }
-  }, [initialValue, key]);
+  }, [key]);
 
   const [storedValue, setStoredValue] = useState<T>(readValue);
 

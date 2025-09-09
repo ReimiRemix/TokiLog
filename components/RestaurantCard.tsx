@@ -258,8 +258,8 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({
       </div>
         <div className="flex items-center ml-2">
             <div className="flex gap-1 overflow-x-auto whitespace-nowrap">
-                {restaurant.customUrl && (<IconButton href={restaurant.customUrl.startsWith('http') ? restaurant.customUrl : `https://${restaurant.customUrl}`} title="ウェブサイト" disabled={restaurant.isClosed || isReadOnly}><ExternalLinkIcon className="w-5 h-5"/></IconButton>)}
-                <IconButton href={mapUrl} title={hasInvalidCoords ? "位置情報がありません" : "地図で見る"} disabled={hasInvalidCoords || restaurant.isClosed || isReadOnly}><MapPinIcon /></IconButton>
+                {restaurant.customUrl && (<IconButton href={restaurant.customUrl.startsWith('http') ? restaurant.customUrl : `https://${restaurant.customUrl}`} title="ウェブサイト" disabled={restaurant.isClosed}><ExternalLinkIcon className="w-5 h-5"/></IconButton>)}
+                <IconButton href={mapUrl} title={hasInvalidCoords ? "位置情報がありません" : "地図で見る"} disabled={hasInvalidCoords || restaurant.isClosed}><MapPinIcon /></IconButton>
                 {!controlsDisabled && (
                   <IconButton onClick={() => onRefetch(restaurant)} aria-label="情報を更新" title="情報を更新">
                     <RefreshCwIcon className="w-5 h-5"/>

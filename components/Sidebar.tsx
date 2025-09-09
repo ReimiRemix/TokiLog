@@ -237,7 +237,9 @@ const Sidebar: React.FC<SidebarProps> = ({
             {orderedMenuItems.map((item, index) => (
               <li key={item.id} className="flex items-center group">
                 <button
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onClose();
                     if (item.id === 'areaFilter') { // Handle areaFilter separately
                       onToggleAreaFilter();
                     } else {
@@ -245,7 +247,6 @@ const Sidebar: React.FC<SidebarProps> = ({
                       const targetView = item.id === 'admin_user_management' ? 'settings' : item.id;
                       onSelectMenuItem(targetView as View); // View 型にキャスト
                     }
-                    onClose();
                   }}
                   className={twMerge(
                     "flex-1 flex items-center rounded-md text-sm font-medium transition-colors",
