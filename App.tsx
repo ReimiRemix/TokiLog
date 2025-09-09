@@ -975,7 +975,7 @@ const App: React.FC = () => {
       <>
       {isReadOnlyMode && showReadOnlyBanner && !shareId && <ReadOnlyBanner isFiltered={!!lockedFilters} />}
       <div className={`flex h-screen ${isReadOnlyMode ? 'pt-10' : ''}`}>
-        {!isReadOnlyMode && (
+        {(!isReadOnlyMode || (isReadOnlyMode && !user && shareId)) && (
           <Sidebar
             restaurants={isReadOnlyMode ? displayedRestaurants : restaurants}
             prefectureOrder={prefectureOrder}
@@ -999,6 +999,7 @@ const App: React.FC = () => {
               setIsAreaFilterSidebarOpen(prev => !prev);
             }}
             unreadNotificationCount={unreadNotificationCount}
+            isSharedLinkAnonymous={isReadOnlyMode && !user && !!shareId}
           />
         )}
         {isSidebarOpen && isMobile && (
@@ -1034,6 +1035,7 @@ const App: React.FC = () => {
                 )}        <main 
           className={twMerge(
             "flex-1 overflow-y-auto transition-all duration-300 ease-in-out",
+            isSidebarOpen && isMobile ? "ml-80" : "", // Push content when mobile sidebar is open
             "md:transition-[margin-left]",
             isReadOnlyMode
               ? "md:ml-0"
@@ -1054,7 +1056,9 @@ const App: React.FC = () => {
               <div className="px-6 md:px-8 max-w-4xl mx-auto pt-6 md:pt-8">
                 <header className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-4 justify-start flex-shrink-0">
-                     <button onClick={() => setIsSidebarOpen(true)} className={`p-2 md:hidden ${!isSidebarCollapsed || (isReadOnlyMode && !lockedFilters) ? 'md:invisible' : ''}`}><MenuIcon /></button>
+                     {(!isReadOnlyMode || (isReadOnlyMode && !user && shareId)) && (
+                       <button onClick={() => setIsSidebarOpen(true)} className="p-2 md:hidden"><MenuIcon /></button>
+                     )}
                      {!(isReadOnlyMode && lockedFilters) && <button onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)} className="hidden md:flex p-2 items-center gap-2 text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-md">
                         {isSidebarCollapsed ? <ChevronRightIcon /> : <ChevronLeftIcon />} <span>メニュー</span>
                      </button>}
@@ -1301,16 +1305,16 @@ const App: React.FC = () => {
                   <h2 className="text-2xl font-bold mb-4 text-light-text dark:text-dark-text">
                     {currentViewedUserId && currentViewedUserProfile
                       ? `${currentViewedUserProfile.display_name || currentViewedUserProfile.username}さんのお気に入り`
-                      : 'あなたのお気に入り'}
+                      : userProfile?.display_name || userProfile?.username ? `${userProfile.display_name || userProfile.username}さんのお気に入り` : 'あなたのお気に入り'}
                   </h2>
                   <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                     {!(isReadOnlyMode) && 
+                     {!(isReadOnlyMode && !shareId) && 
                         <button onClick={() => setIsFilterVisible(!isFilterVisible)} className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold rounded-md bg-light-card dark:bg-dark-card border border-light-border dark:border-dark-border hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                           <FilterIcon /> フィルター <ChevronDownIcon className={`w-4 h-4 transition-transform ${isFilterVisible ? 'rotate-180' : ''}`} />
                         </button>
                      }
                      {/* Ensure the button group has a placeholder to prevent layout shifts */}
-                     {(isReadOnlyMode) && <div className="w-full sm:w-auto" />}
+                     {(isReadOnlyMode && !shareId) && <div className="w-full sm:w-auto" />}
 
                     <div className="flex items-center gap-2">
                       {!isReadOnlyMode && !selectedFollowedUserId && (
@@ -1322,7 +1326,7 @@ const App: React.FC = () => {
                       )}
                     </div>
                   </div>
-                   {isFilterVisible && !isReadOnlyMode && (
+                   {(isFilterVisible && (!isReadOnlyMode || shareId)) && (
                       <div className="p-4 bg-light-card dark:bg-dark-card rounded-ui-medium border border-light-border dark:border-dark-border grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-6 animate-slide-down">
                         <div>
                           <label htmlFor="genre-filter" className="block text-sm font-medium mb-2">ジャンル</label>

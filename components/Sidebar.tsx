@@ -56,6 +56,7 @@ interface SidebarProps {
   followingCount: number;
   isSuperAdmin: boolean;
   unreadNotificationCount: number;
+  isSharedLinkAnonymous?: boolean; // New prop
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
@@ -77,18 +78,21 @@ const Sidebar: React.FC<SidebarProps> = ({
   followingCount,
   isSuperAdmin,
   unreadNotificationCount,
+  isSharedLinkAnonymous,
 }) => {
   console.log('[Debug][Sidebar] Received unreadNotificationCount:', unreadNotificationCount);
   const [searchQuery, setSearchQuery] = useState('');
   const [expanded, setExpanded] = useState<{ [key: string]: boolean }>({});
 
   const menuItems = useMemo(() => {
-    const items = [...defaultMenuItems];
-    if (isSuperAdmin) {
+    let items = [...defaultMenuItems];
+    if (isSharedLinkAnonymous) {
+      items = items.filter(item => item.id === 'areaFilter');
+    } else if (isSuperAdmin) {
       items.push({ id: 'monitoring', label: '監視', icon: ActivityIcon });
     }
     return items;
-  }, [isSuperAdmin]);
+  }, [isSuperAdmin, isSharedLinkAnonymous]);
 
   const [orderedMenuItems, setOrderedMenuItems] = useLocalStorage<MenuItem[]>('sidebarMenuItems', menuItems);
 
