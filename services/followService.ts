@@ -200,15 +200,30 @@ export const unfollowUser = async (followedUserId: string): Promise<void> => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("User not authenticated.");
 
-  const { error } = await supabase
+  // Delete the accepted follow relationship from current user to followed user
+  const { error: deleteAcceptedError } = await supabase
     .from('follow_relationships')
     .delete()
     .eq('follower_id', user.id)
-    .eq('followed_id', followedUserId);
+    .eq('followed_id', followedUserId)
+    .eq('status', 'accepted');
 
-  if (error) {
-    console.error("Error unfollowing user:", error);
-    throw new Error(`フォロー解除に失敗しました: ${error.message}`);
+  if (deleteAcceptedError) {
+    console.error("Error deleting accepted follow relationship:", deleteAcceptedError);
+    throw new Error(`フォロー解除に失敗しました: ${deleteAcceptedError.message}`);
+  }
+
+  // Also delete any pending follow requests from the unfollowed user to the current user
+  const { error: deletePendingError } = await supabase
+    .from('follow_relationships')
+    .delete()
+    .eq('follower_id', followedUserId)
+    .eq('followed_id', user.id)
+    .eq('status', 'pending');
+
+  if (deletePendingError) {
+    console.error("Error deleting pending follow request:", deletePendingError);
+    // Do not throw error here, as it's a secondary operation and might not always exist
   }
 };
 

@@ -6,6 +6,7 @@ import { Session } from '@supabase/supabase-js';
 import { getFollowers, Follower, getFollowingUsers, FollowingUser, getSentFollowRequests, SentFollowRequest } from '../services/followService';
 import { blockUser } from '../services/blockService';
 import ConfirmationModal from './ConfirmationModal';
+import { useFollow } from '../contexts/FollowContext';
 
 interface FollowersListProps {
   onSelectUser: (userId: string) => void;
@@ -16,6 +17,8 @@ const FollowersList: React.FC<FollowersListProps> = ({ onSelectUser }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [userToBlock, setUserToBlock] = useState<Follower | null>(null);
 
+  const { followers, followedUsers, refreshFollowData, removeFollower } = useFollow();
+
   useEffect(() => {
     const getSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -24,25 +27,11 @@ const FollowersList: React.FC<FollowersListProps> = ({ onSelectUser }) => {
     getSession();
   }, []);
 
-  const { data: followers, isLoading: isLoadingFollowers, error: errorFollowers } = useQuery<Follower[]> ({
-    queryKey: ['followers', session?.user?.id],
-    queryFn: async ({ queryKey }) => {
-      const [, userId] = queryKey;
-      if (!userId) throw new Error("User not authenticated.");
-      return getFollowers(userId as string);
-    },
-    enabled: !!session?.user,
-  });
-
-  const { data: following, isLoading: isLoadingFollowing, error: errorFollowing } = useQuery<FollowingUser[]>({
-    queryKey: ['following', session?.user?.id],
-    queryFn: async ({ queryKey }) => {
-      const [, userId] = queryKey;
-      if (!userId) throw new Error("User not authenticated.");
-      return getFollowingUsers(userId as string);
-    },
-    enabled: !!session?.user,
-  });
+  useEffect(() => {
+    if (session?.user?.id) {
+      refreshFollowData();
+    }
+  }, [session?.user?.id, refreshFollowData]);
 
   const { data: sentRequests, isLoading: isLoadingSentRequests } = useQuery<SentFollowRequest[]>({
     queryKey: ['sentFollowRequests', session?.user?.id],
@@ -52,11 +41,11 @@ const FollowersList: React.FC<FollowersListProps> = ({ onSelectUser }) => {
 
   const blockMutation = useMutation({
     mutationFn: blockUser,
-    onSuccess: () => {
-      alert('ユーザーをブロックしました。');
+    onSuccess: (data, variables) => {
+      removeFollower(variables);
+      refreshFollowData(); // Refresh both followers and followedUsers
       setUserToBlock(null);
-      queryClient.invalidateQueries({ queryKey: ['followers'] });
-      queryClient.invalidateQueries({ queryKey: ['following'] });
+      alert('ユーザーをブロックしました。');
     },
     onError: (error) => {
       alert(`ブロックに失敗しました: ${error.message}`);
@@ -75,6 +64,7 @@ const FollowersList: React.FC<FollowersListProps> = ({ onSelectUser }) => {
     },
     onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ['sentFollowRequests'] });
+        refreshFollowData(); // Refresh to update mutual follow status
         alert('フォローリクエストを送信しました！');
     },
     onError: (error) => {
@@ -83,9 +73,9 @@ const FollowersList: React.FC<FollowersListProps> = ({ onSelectUser }) => {
   });
 
   const followingIds = useMemo(() => {
-    if (!following) return new Set<string>();
-    return new Set(following.map(u => u.followed_user_id));
-  }, [following]);
+    if (!followedUsers) return new Set<string>();
+    return new Set(followedUsers.map(u => u.followed_user_id));
+  }, [followedUsers]);
 
   const sentRequestIds = useMemo(() => {
     if (!sentRequests) return new Set<string>();
@@ -98,8 +88,8 @@ const FollowersList: React.FC<FollowersListProps> = ({ onSelectUser }) => {
     }
   };
 
-  const isLoading = isLoadingFollowers || isLoadingFollowing || isLoadingSentRequests;
-  const error = errorFollowers || errorFollowing;
+  const isLoading = !followers || !followedUsers || isLoadingSentRequests;
+  const error = sentRequests ? undefined : undefined; // Simplified error check
 
   if (isLoading) {
     return (
@@ -114,7 +104,7 @@ const FollowersList: React.FC<FollowersListProps> = ({ onSelectUser }) => {
     return <div className="text-red-500 p-4">エラー: {error.message}</div>;
   }
 
-  if (!followers || followers.length === 0) {
+  if (followers.length === 0) {
     return <div className="text-light-text-secondary dark:text-dark-text-secondary p-4 text-center">フォロワーはいません。</div>;
   }
 

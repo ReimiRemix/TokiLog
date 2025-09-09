@@ -6,9 +6,10 @@ import { Session } from '@supabase/supabase-js';
 import { unfollowUser, getFollowers, Follower } from '../services/followService';
 import { blockUser } from '../services/blockService';
 import ConfirmationModal from './ConfirmationModal';
+import { useFollow } from '../contexts/FollowContext';
 
 interface FollowedUser {
-  followed_id: string;
+  followed_user_id: string;
   followed_username: string;
   followed_display_name: string | null;
 }
@@ -23,6 +24,8 @@ const FollowedUsersList: React.FC<FollowedUsersListProps> = ({ onSelectUser }) =
   const [userToUnfollow, setUserToUnfollow] = useState<FollowedUser | null>(null);
   const [userToBlock, setUserToBlock] = useState<FollowedUser | null>(null);
 
+  const { followedUsers, refreshFollowData, removeFollowedUser } = useFollow();
+
   useEffect(() => {
     const getSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -31,42 +34,11 @@ const FollowedUsersList: React.FC<FollowedUsersListProps> = ({ onSelectUser }) =
     getSession();
   }, []);
 
-  const { data: followedUsers, isLoading: isLoadingFollowed, error: errorFollowed } = useQuery<FollowedUser[]>({
-    queryKey: ['followedUsers', session?.user?.id],
-    queryFn: async () => {
-      if (!session?.user) throw new Error("User not authenticated.");
-
-      const { data: followData, error: followError } = await supabase
-        .from('follow_relationships')
-        .select('followed_id')
-        .eq('follower_id', session.user.id)
-        .eq('status', 'accepted');
-
-      if (followError) throw followError;
-      if (!followData || followData.length === 0) return [];
-
-      const followedIds = followData.map(item => item.followed_id);
-
-      const { data: userProfilesData, error: userProfilesError } = await supabase
-        .from('user_profiles')
-        .select('id, username, display_name')
-        .in('id', followedIds);
-
-      if (userProfilesError) throw userProfilesError;
-
-      const userProfilesMap = new Map(userProfilesData.map(profile => [profile.id, profile]));
-
-      return followData.map((item: any) => {
-        const userProfile = userProfilesMap.get(item.followed_id);
-        return {
-          followed_id: item.followed_id,
-          followed_username: userProfile?.username || 'Unknown',
-          followed_display_name: userProfile?.display_name || 'Unknown User',
-        };
-      });
-    },
-    enabled: !!session?.user,
-  });
+  useEffect(() => {
+    if (session?.user?.id) {
+      refreshFollowData();
+    }
+  }, [session?.user?.id, refreshFollowData]);
 
   const { data: followers, isLoading: isLoadingFollowers, error: errorFollowers } = useQuery<Follower[]> ({
     queryKey: ['followers', session?.user?.id],
@@ -85,8 +57,9 @@ const FollowedUsersList: React.FC<FollowedUsersListProps> = ({ onSelectUser }) =
 
   const unfollowMutation = useMutation({
     mutationFn: unfollowUser,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['followedUsers'] });
+    onSuccess: (data, variables) => {
+      removeFollowedUser(variables);
+      refreshFollowData(); // Refresh followers list as well
       setUserToUnfollow(null);
       alert('フォローを解除しました。');
     },
@@ -97,10 +70,10 @@ const FollowedUsersList: React.FC<FollowedUsersListProps> = ({ onSelectUser }) =
 
   const blockMutation = useMutation({
     mutationFn: blockUser,
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
+      removeFollowedUser(variables);
+      refreshFollowData(); // Refresh followers list as well
       setUserToBlock(null);
-      queryClient.invalidateQueries({ queryKey: ['followedUsers'] });
-      queryClient.invalidateQueries({ queryKey: ['followers'] });
       alert('ユーザーをブロックしました。');
     },
     onError: (error) => {
@@ -110,7 +83,7 @@ const FollowedUsersList: React.FC<FollowedUsersListProps> = ({ onSelectUser }) =
 
   const handleConfirmUnfollow = () => {
     if (userToUnfollow) {
-      unfollowMutation.mutate(userToUnfollow.followed_id);
+      unfollowMutation.mutate(userToUnfollow.followed_user_id);
     }
   };
 
@@ -120,8 +93,8 @@ const FollowedUsersList: React.FC<FollowedUsersListProps> = ({ onSelectUser }) =
     }
   };
 
-  const isLoading = isLoadingFollowed || isLoadingFollowers;
-  const error = errorFollowed || errorFollowers;
+  const isLoading = !followedUsers || isLoadingFollowers;
+  const error = errorFollowers;
 
   if (isLoading) {
     return (
@@ -136,7 +109,7 @@ const FollowedUsersList: React.FC<FollowedUsersListProps> = ({ onSelectUser }) =
     return <div className="text-red-500 p-4">エラー: {error.message}</div>;
   }
 
-  if (!followedUsers || followedUsers.length === 0) {
+  if (followedUsers.length === 0) {
     return <div className="text-light-text-secondary dark:text-dark-text-secondary p-4 text-center">フォロー中のユーザーはいません。</div>;
   }
 

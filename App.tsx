@@ -52,7 +52,7 @@ import NotificationsView from './components/NotificationsView';
 
 
 import { getFollowersCount, getFollowingCount } from './services/followService';
-
+import { FollowProvider } from './contexts/FollowContext';
 
 export type Theme = 'light' | 'dark';
 type SortType = 'createdAt' | 'visitCount' | 'prefecture' | 'city';
@@ -971,7 +971,8 @@ const App: React.FC = () => {
   }
 
   return (
-    <>
+    <FollowProvider>
+      <>
       {isReadOnlyMode && showReadOnlyBanner && !shareId && <ReadOnlyBanner isFiltered={!!lockedFilters} />}
       <div className={`flex h-screen ${isReadOnlyMode ? 'pt-10' : ''}`}>
         {!isReadOnlyMode && (
@@ -1521,6 +1522,7 @@ const App: React.FC = () => {
 
       {!isReadOnlyMode && user && <BottomTabBar currentView={view} onSelectView={setView} />}
     </>
+  </FollowProvider>
   );
 };
 
