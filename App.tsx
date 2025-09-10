@@ -83,11 +83,23 @@ const sortTypeLabels: { [key in SortType]: string } = {
 
 
 
+const APP_VERSION = '1.0.1'; // Define the current version of the application
+
 const App: React.FC = () => {
+
+  useEffect(() => {
+    const storedVersion = localStorage.getItem('appVersion');
+    if (storedVersion !== APP_VERSION) {
+      console.log(`App version mismatch. Clearing storage. Stored: ${storedVersion}, Current: ${APP_VERSION}`);
+      localStorage.clear();
+      sessionStorage.clear();
+      localStorage.setItem('appVersion', APP_VERSION);
+    }
+  }, []);
+
   const queryClient = useQueryClient();
   const [hotpepperPage, setHotpepperPage] = useState(1);
   const [user, setUser] = useState<User | null>(null);
-  console.log('App.tsx - user object:', user);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [followersCount, setFollowersCount] = useState<number>(0);
   const [followingCount, setFollowingCount] = useState<number>(0);
@@ -153,7 +165,7 @@ const App: React.FC = () => {
   });
 
   useEffect(() => {
-      if (!user) return;
+      if (!user?.id) return;
 
       const channel = supabase
           .channel(`notifications:user_id=eq.${user.id}`)
@@ -166,7 +178,6 @@ const App: React.FC = () => {
                   filter: `user_id=eq.${user.id}`,
                               },
                               () => {
-                                  console.log('[Debug][Realtime] Received INSERT event on notifications table!');
                                   queryClient.invalidateQueries({ queryKey: ['notifications', user.id] });
                               }          )
           .subscribe();
@@ -174,15 +185,13 @@ const App: React.FC = () => {
       return () => {
           supabase.removeChannel(channel);
       };
-  }, [user, queryClient]);
+  }, [user?.id, queryClient]);
 
   useEffect(() => {
-    console.log('[Debug] Notifications data updated:', notifications);
   }, [notifications]);
 
   const unreadNotificationCount = useMemo(() => {
     const count = notifications.filter(n => !n.is_read).length;
-    console.log('[Debug] Unread count calculated:', count);
     return count;
   }, [notifications]);
 
@@ -234,7 +243,7 @@ const App: React.FC = () => {
     if (user && !shareId) { // Only set currentViewedUserId to user.id if not in share mode
       setCurrentViewedUserId(user.id);
     }
-  }, [user, shareId]);
+  }, [user?.id, shareId]);
 
    // Query for the current user's restaurants
    const { data: myRestaurants = [], error: myRestaurantsError } = useQuery({
@@ -247,20 +256,21 @@ const App: React.FC = () => {
           
           if (error) throw new Error(`自分のお気に入りリストの読み込みに失敗しました: ${error.message}`);
 
-          return data.map(r => {
-            let sourcesData = r.sources;
-            if (typeof sourcesData === 'string') {
-              try { sourcesData = JSON.parse(sourcesData); } catch (e) { sourcesData = []; }
-            }
-            return {
-              id: r.id, name: r.name, address: r.address, hours: r.hours, latitude: r.latitude, 
-              longitude: r.longitude, prefecture: r.prefecture, city: r.city, website: r.website,
-              sources: Array.isArray(sourcesData) ? sourcesData : [], visitCount: r.visit_count, 
-              userComment: r.user_comment, customUrl: r.custom_url, genres: r.genres,
-              createdAt: r.created_at, priceRange: r.price_range, isClosed: r.is_closed,
-            };
-          }) as Restaurant[];
+          return data;
       },
+      select: (data) => data.map(r => {
+        let sourcesData = r.sources;
+        if (typeof sourcesData === 'string') {
+          try { sourcesData = JSON.parse(sourcesData); } catch (e) { sourcesData = []; }
+        }
+        return {
+          id: r.id, name: r.name, address: r.address, hours: r.hours, latitude: r.latitude, 
+          longitude: r.longitude, prefecture: r.prefecture, city: r.city, website: r.website,
+          sources: Array.isArray(sourcesData) ? sourcesData : [], visitCount: r.visit_count, 
+          userComment: r.user_comment, customUrl: r.custom_url, genres: r.genres,
+          createdAt: r.created_at, priceRange: r.price_range, isClosed: r.is_closed,
+        };
+      }) as Restaurant[],
       enabled: !isReadOnlyMode && !!user && !selectedFollowedUserId, // Only fetch if not in read-only mode and user is logged in and no followed user is selected
   });
 
@@ -321,10 +331,8 @@ const App: React.FC = () => {
     const fetchUserProfileDirectly = async () => {
       if (!user?.id) {
         setUserProfile(null);
-        console.log('App.tsx - Direct fetch: user ID is null.');
         return;
       }
-      console.log('App.tsx - Direct fetch: Attempting to fetch user profile for ID:', user.id);
       const { data, error } = await supabase
         .from('user_profiles')
         .select('username, display_name, is_super_admin')
@@ -332,45 +340,34 @@ const App: React.FC = () => {
         .single();
 
       if (error) {
-        console.error('App.tsx - Direct fetch error:', error);
         setUserProfile(null);
       } else if (data) {
-        console.log('App.tsx - Direct fetch data:', data);
         setUserProfile(data as UserProfile);
       } else {
-        console.log('App.tsx - Direct fetch: No data returned for user profile.');
         setUserProfile(null);
       }
     };
 
     fetchUserProfileDirectly();
-  }, [user]);
+  }, [user?.id]);
 
   useQuery({
     queryKey: ['followCounts', user?.id],
     queryFn: async () => {
-      console.log('[followCounts QueryFn] Executing for user:', user?.id);
       if (!user?.id) return { followers: 0, following: 0 };
 
       const followers = await getFollowersCount(user.id);
       const following = await getFollowingCount(user.id);
 
-      // Re-add DEBUGGING ONLY: Directly set state here
-      setFollowersCount(followers);
-      setFollowingCount(following);
-      console.log('DEBUG: Directly set followersCount to', followers, 'and followingCount to', following);
-
-      return { followers, following }; // Still return for React Query's internal state
+      return { followers, following };
     },
     enabled: !!user?.id,
-    refetchOnMount: true, // Keep this for now to ensure re-fetch
+    refetchOnMount: true,
     onSuccess: (data) => {
-      console.log('Follow counts fetched (onSuccess):', data);
-      // setFollowersCount(data.followers); // Keep commented out
-      // setFollowingCount(data.following); // Keep commented out
+      setFollowersCount(data.followers);
+      setFollowingCount(data.following);
     },
     onError: (error) => {
-      console.error('Error fetching follow counts (from onError):', error);
       setFollowersCount(0);
       setFollowingCount(0);
     },
@@ -378,7 +375,6 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (userProfile) {
-      console.log('App.tsx - userProfile.is_super_admin in useEffect:', userProfile.is_super_admin);
     }
   }, [userProfile]);
 
@@ -393,20 +389,21 @@ const App: React.FC = () => {
 
       if (error) throw new Error(`フォロー中ユーザーのお気に入りリストの読み込みに失敗しました: ${error.message}`);
 
-      return data.map(r => {
-        let sourcesData = r.sources;
-        if (typeof sourcesData === 'string') {
-          try { sourcesData = JSON.parse(sourcesData); } catch (e) { sourcesData = []; }
-        }
-        return {
-          id: r.id, name: r.name, address: r.address, hours: r.hours, latitude: r.latitude, 
-          longitude: r.longitude, prefecture: r.prefecture, city: r.city, website: r.website,
-          sources: Array.isArray(sourcesData) ? sourcesData : [], visitCount: r.visit_count, 
-          userComment: r.user_comment, customUrl: r.custom_url, genres: r.genres,
-          createdAt: r.created_at, priceRange: r.price_range, isClosed: r.is_closed,
-        };
-      }) as Restaurant[];
+      return data;
     },
+    select: (data) => (data || []).map(r => {
+      let sourcesData = r.sources;
+      if (typeof sourcesData === 'string') {
+        try { sourcesData = JSON.parse(sourcesData); } catch (e) { sourcesData = []; }
+      }
+      return {
+        id: r.id, name: r.name, address: r.address, hours: r.hours, latitude: r.latitude, 
+        longitude: r.longitude, prefecture: r.prefecture, city: r.city, website: r.website,
+        sources: Array.isArray(sourcesData) ? sourcesData : [], visitCount: r.visit_count, 
+        userComment: r.user_comment, customUrl: r.custom_url, genres: r.genres,
+        createdAt: r.created_at, priceRange: r.price_range, isClosed: r.is_closed,
+      };
+    }) as Restaurant[],
     enabled: !!selectedFollowedUserId, // Only fetch if a followed user is selected
   });
 
@@ -463,25 +460,23 @@ const App: React.FC = () => {
       });
 
       if (error) {
-        console.error('Error fetching shared restaurants via RPC:', error);
-        alert(`共有リストの読み込みに失敗しました: ${error.message}`); // 一時的にアラート表示
         throw new Error(`共有リストの読み込みに失敗しました: ${error.message}`);
       }
-
-      return (data || []).map(r => {
-        let sourcesData = r.sources;
-        if (typeof sourcesData === 'string') {
-          try { sourcesData = JSON.parse(sourcesData); } catch (e) { sourcesData = []; }
-        }
-        return {
-          id: r.id, createdAt: r.created_at, name: r.name, address: r.address,
-          hours: r.hours, latitude: r.latitude, longitude: r.longitude,
-          prefecture: r.prefecture, city: r.city, website: r.website,
-          sources: Array.isArray(sourcesData) ? sourcesData : [], visitCount: r.visit_count, userComment: r.user_comment,
-          customUrl: r.custom_url, genres: r.genres, priceRange: r.price_range, isClosed: r.is_closed,
-        };
-      }) as Restaurant[];
+      return data;
     },
+    select: (data) => (data || []).map(r => {
+      let sourcesData = r.sources;
+      if (typeof sourcesData === 'string') {
+        try { sourcesData = JSON.parse(sourcesData); } catch (e) { sourcesData = []; }
+      }
+      return {
+        id: r.id, createdAt: r.created_at, name: r.name, address: r.address,
+        hours: r.hours, latitude: r.latitude, longitude: r.longitude,
+        prefecture: r.prefecture, city: r.city, website: r.website,
+        sources: Array.isArray(sourcesData) ? sourcesData : [], visitCount: r.visit_count, userComment: r.user_comment,
+        customUrl: r.custom_url, genres: r.genres, priceRange: r.price_range, isClosed: r.is_closed,
+      };
+    }) as Restaurant[],
     enabled: isReadOnlyMode && !!shareId && isShareDataLoaded,
     retry: false,
   });
@@ -540,7 +535,6 @@ const App: React.FC = () => {
     onError: (error) => {
       setSearchResults([]);
       setSearchError(error.message); // Set error message to display
-      console.error("Hotpepper search failed:", error);
     },
   });
 
@@ -604,7 +598,6 @@ const App: React.FC = () => {
               const coords = await handleGeocode(fullAddress);
               latitude = coords.latitude; longitude = coords.longitude;
           } catch (e) {
-              console.warn("Geocoding failed, saving without coordinates.", e);
           }
       }
 
@@ -647,11 +640,6 @@ const App: React.FC = () => {
     onSuccess: (_, { id, updatedData }) => {
       queryClient.invalidateQueries({ queryKey: ['restaurants', user?.id] });
       
-      // Manually update the displayed list to prevent re-sorting
-      setDisplayedRestaurants(prev => 
-          prev.map(r => r.id === id ? { ...r, ...updatedData } : r)
-      );
-
       if(updatedData.latitude !== undefined) setRestaurantForLocationEdit(null);
     },
     onError: (error) => alert(`更新エラー: ${error instanceof Error ? error.message : '不明なエラー'}`),
@@ -694,20 +682,12 @@ const App: React.FC = () => {
     }
   }, [isShareDataLoaded, shareData]);
 
-  useEffect(() => {
-    if (isSharedRestaurantsSuccess && sharedRestaurants.length === 0 && isReadOnlyMode && shareId) {
-      console.log('Shared restaurants query returned empty data on smartphone.');
-      console.log('Current shareId:', shareId);
-      console.log('isReadOnlyMode:', isReadOnlyMode);
-      // ここでさらにデバッグ情報を追加することも可能
-    }
-  }, [isSharedRestaurantsSuccess, sharedRestaurants, isReadOnlyMode, shareId]);
+
 
   // --- Effects ---
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
-      console.log('Current authenticated user ID:', session?.user?.id); // TEMPORARY LOG
 
       // If user is logged in, invalidate userProfile query to ensure it fetches
       if (session?.user) {
@@ -763,7 +743,7 @@ const App: React.FC = () => {
     }
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [queryClient]);
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark');
@@ -891,15 +871,10 @@ const App: React.FC = () => {
 
   const handleCloseAreaFilter = () => {
     setIsAreaFilterSidebarOpen(false);
-    setSidebarFilters([]);
     setView('favorites');
   };
 
-  // --- Display State ---
-  const [displayedRestaurants, setDisplayedRestaurants] = useState<Restaurant[]>([]);
-
-  // --- Memoized data ---
-  useEffect(() => {
+  const displayedRestaurants = useMemo(() => {
     let result = [...restaurants];
 
     // Filter out closed restaurants for map view, only if current view is map
@@ -944,7 +919,7 @@ const App: React.FC = () => {
       return 0;
     });
 
-    setDisplayedRestaurants(result);
+    return result;
   }, [restaurants, sidebarFilters, genreFilters, sortConfig, view]);
 
   const allGenres = useMemo(() => {

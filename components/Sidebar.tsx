@@ -80,7 +80,6 @@ const Sidebar: React.FC<SidebarProps> = ({
   unreadNotificationCount,
   isSharedLinkAnonymous,
 }) => {
-  console.log('[Debug][Sidebar] Received unreadNotificationCount:', unreadNotificationCount);
   const [searchQuery, setSearchQuery] = useState('');
   const [expanded, setExpanded] = useState<{ [key: string]: boolean }>({});
 
