@@ -78,16 +78,16 @@ const handler: Handler = async (event: HandlerEvent) => {
         username: username,
       });
 
-    if (profileError) {
-      console.error('Supabase Profile Insertion Error:', profileError);
+    if (insertProfileError) {
+      console.error('Supabase Profile Insertion Error:', insertProfileError);
       // ロールバック: user_profiles への挿入が失敗した場合、Supabase Authで作成されたユーザーを削除
-      if (userId) {
-        const { error: deleteAuthUserError } = await supabase.auth.admin.deleteUser(userId);
+      if (newUser.user.id) {
+        const { error: deleteAuthUserError } = await supabaseAdmin.auth.admin.deleteUser(newUser.user.id);
         if (deleteAuthUserError) {
           console.error('Failed to rollback auth user creation:', deleteAuthUserError);
         }
       }
-      return { statusCode: 500, body: `Failed to insert user profile: ${profileError.message}` };
+      return { statusCode: 500, body: `Failed to insert user profile: ${insertProfileError.message}` };
     }
 
 
