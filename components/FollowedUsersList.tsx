@@ -123,12 +123,14 @@ const FollowedUsersList: React.FC<FollowedUsersListProps> = ({ onSelectUser }) =
             const isMutual = followerIds.has(user.followed_user_id);
             return (
               <div
-                key={user.followed_id}
+                key={user.followed_user_id}
                 className="flex items-center justify-between bg-light-card dark:bg-dark-card p-3 rounded-md shadow-sm border border-light-border dark:border-dark-border"
               >
                 <div
                   className="flex-grow cursor-pointer"
-                  onClick={() => onSelectUser(user.followed_id)}
+                  onClick={() => {
+                    onSelectUser(user.followed_user_id);
+                  }}
                 >
                   <p className="font-semibold text-light-text dark:text-dark-text">
                     {user.followed_display_name || user.followed_username}

@@ -987,6 +987,9 @@ const App: React.FC = () => {
             onSelectMenuItem={(selectedView: View | 'notifications') => {
               setView(selectedView as View);
               setIsAreaFilterSidebarOpen(false);
+              if (selectedView === 'followed') {
+                setSelectedFollowedUserId(null);
+              }
             }}
             onToggleAreaFilter={() => {
               setIsAreaFilterSidebarOpen(prev => !prev);
