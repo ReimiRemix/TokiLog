@@ -353,10 +353,13 @@ const App: React.FC = () => {
 
       if (error) {
         setUserProfile(null);
+        console.error('Error fetching user profile:', error);
       } else if (data) {
         setUserProfile(data as UserProfile);
+        console.log('App.tsx - User Profile fetched:', data);
       } else {
         setUserProfile(null);
+        console.log('App.tsx - User Profile data is null.');
       }
     };
 
