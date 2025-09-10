@@ -21,6 +21,7 @@ const handler: Handler = async (event: HandlerEvent) => {
   });
 
   try {
+    console.log('create-user-admin.ts - event.body:', event.body);
     const { email, password, displayName, username } = JSON.parse(event.body || '{}');
 
     if (!email || !password) {
