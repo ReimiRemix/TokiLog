@@ -80,15 +80,38 @@ const handler: Handler = async (event: HandlerEvent) => {
       });
 
     if (insertProfileError) {
-      console.error('Supabase Profile Insertion Error:', insertProfileError);
-      // ロールバック: user_profiles への挿入が失敗した場合、Supabase Authで作成されたユーザーを削除
-      if (newUser.user.id) {
-        const { error: deleteAuthUserError } = await supabaseAdmin.auth.admin.deleteUser(newUser.user.id);
-        if (deleteAuthUserError) {
-          console.error('Failed to rollback auth user creation:', deleteAuthUserError);
+      if (insertProfileError.code === '23505') { // Duplicate key error
+        console.warn('Duplicate profile ID detected. Attempting to delete and re-insert.', newUser.user.id);
+        // Attempt to delete the existing profile with the same ID
+        const { error: deleteExistingProfileError } = await supabaseAdmin
+          .from('user_profiles')
+          .delete()
+          .eq('id', newUser.user.id);
+
+        if (deleteExistingProfileError) {
+          console.error('Failed to delete existing duplicate profile:', deleteExistingProfileError);
+          // If deletion fails, re-throw the original error
+          throw insertProfileError; // Re-throw original error if cleanup fails
         }
+
+        // Try inserting again after deleting the duplicate
+        const { error: retryInsertError } = await supabaseAdmin
+          .from('user_profiles')
+          .insert({
+            id: newUser.user.id,
+            display_name: displayName,
+            username: username,
+          });
+
+        if (retryInsertError) {
+          console.error('Failed to insert profile after retry:', retryInsertError);
+          // If retry fails, re-throw the original error
+          throw retryInsertError; // Re-throw original error if retry fails
+        }
+      } else {
+        // Re-throw other types of errors
+        throw insertProfileError;
       }
-      return { statusCode: 500, body: `Failed to insert user profile: ${insertProfileError.message}` };
     }
 
 

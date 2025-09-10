@@ -106,9 +106,38 @@ const handler: Handler = async (event: HandlerEvent) => {
           });
 
         if (insertProfileError) {
-          // If profile creation fails, delete the auth user to avoid orphaned users
-          await supabaseAdmin.auth.admin.deleteUser(newUser.user.id);
-          throw insertProfileError;
+          if (insertProfileError.code === '23505') { // Duplicate key error
+            console.warn('Duplicate profile ID detected during bulk registration. Attempting to delete and re-insert.', newUser.user.id);
+            // Attempt to delete the existing profile with the same ID
+            const { error: deleteExistingProfileError } = await supabaseAdmin
+              .from('user_profiles')
+              .delete()
+              .eq('id', newUser.user.id);
+
+            if (deleteExistingProfileError) {
+              console.error('Failed to delete existing duplicate profile during bulk registration:', deleteExistingProfileError);
+              // If deletion fails, re-throw the original error
+              throw insertProfileError; // Re-throw original error if cleanup fails
+            }
+
+            // Try inserting again after deleting the duplicate
+            const { error: retryInsertError } = await supabaseAdmin
+              .from('user_profiles')
+              .insert({
+                id: newUser.user.id,
+                display_name: user.display_name,
+                username: user.username,
+              });
+
+            if (retryInsertError) {
+              console.error('Failed to insert profile after retry during bulk registration:', retryInsertError);
+              // If retry fails, re-throw the original error
+              throw retryInsertError; // Re-throw original error if retry fails
+            }
+          } else {
+            // Re-throw other types of errors
+            throw insertProfileError;
+          }
         }
 
         results.push({ email: user.email, status: 'success' });
