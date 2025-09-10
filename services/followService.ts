@@ -231,6 +231,7 @@ export const unfollowUser = async (followedUserId: string): Promise<void> => {
  * Fetches the number of followers for a given user.
  */
 export const getFollowersCount = async (userId: string): Promise<number> => {
+
   const { count, error } = await supabase
     .from('follow_relationships')
     .select('*', { count: 'exact', head: true })
@@ -238,8 +239,9 @@ export const getFollowersCount = async (userId: string): Promise<number> => {
     .eq('status', 'accepted');
 
   if (error) {
-    console.error("Error fetching followers count:", error);
-    throw new Error(`フォロワー数の取得に失敗しました: ${error.message}`);
+    console.error('Error fetching followers count:', error);
+
+    return 0;
   }
 
   return count || 0;
@@ -249,6 +251,7 @@ export const getFollowersCount = async (userId: string): Promise<number> => {
  * Fetches the number of users a given user is following.
  */
 export const getFollowingCount = async (userId: string): Promise<number> => {
+
   const { count, error } = await supabase
     .from('follow_relationships')
     .select('*', { count: 'exact', head: true })
@@ -257,6 +260,7 @@ export const getFollowingCount = async (userId: string): Promise<number> => {
 
   if (error) {
     console.error("Error fetching following count:", error);
+
     throw new Error(`フォロー数の取得に失敗しました: ${error.message}`);
   }
 

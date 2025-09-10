@@ -89,7 +89,7 @@ const FollowedUsersList: React.FC<FollowedUsersListProps> = ({ onSelectUser }) =
 
   const handleConfirmBlock = () => {
     if (userToBlock) {
-      blockMutation.mutate(userToBlock.followed_id);
+      blockMutation.mutate(userToBlock.followed_user_id);
     }
   };
 
@@ -119,7 +119,8 @@ const FollowedUsersList: React.FC<FollowedUsersListProps> = ({ onSelectUser }) =
         <h2 className="text-2xl font-bold mb-4 text-light-text dark:text-dark-text">フォロー中のユーザー</h2>
         <div className="space-y-3">
           {followedUsers.map((user) => {
-            const isMutual = followerIds.has(user.followed_id);
+
+            const isMutual = followerIds.has(user.followed_user_id);
             return (
               <div
                 key={user.followed_id}

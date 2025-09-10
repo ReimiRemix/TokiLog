@@ -101,8 +101,20 @@ const App: React.FC = () => {
   const [hotpepperPage, setHotpepperPage] = useState(1);
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [followersCount, setFollowersCount] = useState<number>(0);
-  const [followingCount, setFollowingCount] = useState<number>(0);
+  const { data: followCountsData, isLoading: isFollowCountsLoading } = useQuery({
+    queryKey: ['followCounts', user?.id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+
+      const following = await getFollowingCount(user.id);
+      return { followers, following };
+    },
+  });
+
+
+
+  const followersCount = followCountsData?.followers || 0;
+  const followingCount = followCountsData?.following || 0;
   const [currentViewedUserId, setCurrentViewedUserId] = useState<string | null>(null); // For shared links
   const [selectedFollowedUserId, setSelectedFollowedUserId] = useState<string | null>(null); // For selected followed user's restaurants
   const [authLoading, setAuthLoading] = useState(true);
@@ -354,20 +366,25 @@ const App: React.FC = () => {
   useQuery({
     queryKey: ['followCounts', user?.id],
     queryFn: async () => {
-      if (!user?.id) return { followers: 0, following: 0 };
+      if (!user?.id) {
+        return { followers: 0, following: 0 };
+      }
 
       const followers = await getFollowersCount(user.id);
+      console.log('DEBUG: getFollowersCount returned:', followers);
       const following = await getFollowingCount(user.id);
+      console.log('DEBUG: getFollowingCount returned:', following);
 
       return { followers, following };
     },
-    enabled: !!user?.id,
-    refetchOnMount: true,
+    enabled: !!user?.id, // Re-enabled for proper behavior
     onSuccess: (data) => {
+
       setFollowersCount(data.followers);
       setFollowingCount(data.following);
     },
     onError: (error) => {
+      console.error('Follow counts query failed:', error);
       setFollowersCount(0);
       setFollowingCount(0);
     },
@@ -938,6 +955,7 @@ const App: React.FC = () => {
 
 
   // --- Render logic ---
+
   if (authLoading) {
     return <div className="flex items-center justify-center h-screen"><SmallLoadingSpinner /></div>;
   }
@@ -946,7 +964,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <FollowProvider>
+    <FollowProvider key={user?.id}>
       <>
       {isReadOnlyMode && showReadOnlyBanner && !shareId && <ReadOnlyBanner isFiltered={!!lockedFilters} />}
       <div className={`flex h-screen ${isReadOnlyMode ? 'pt-10' : ''}`}>
