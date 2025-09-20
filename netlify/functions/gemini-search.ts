@@ -112,23 +112,38 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
   }
 
   try {
-    const query = JSON.parse(event.body || "{}") as SearchQuery;
-    console.log("Gemini Search - Incoming query:", query);
+    const body = JSON.parse(event.body || "{}");
+    const query = body as SearchQuery;
+    const page = body.page || 1;
+    const count = 10; // 1ページあたりの件数
+
+    console.log("Gemini Search - Incoming query:", query, "Page:", page);
 
     if (!query.prefecture) {
       console.error("Gemini Search - Missing prefecture in query:", query);
       return { statusCode: 400, body: JSON.stringify({ error: "都道府県は必須です。" }) };
     }
 
-    // キャッシュチェック
-    const cacheKey = JSON.stringify(query);
-    const cachedResult = cache.get(cacheKey);
+    // キャッシュキーをページ番号なしで生成
+    const cacheKey = JSON.stringify({ ...query, page: undefined });
+    const cachedResult = cache.get<FetchResult>(cacheKey);
+
     if (cachedResult) {
-      console.log("Gemini Search - Returning cached result for:", cacheKey);
+      console.log("Gemini Search - Returning cached result for:", cacheKey, "Page:", page);
+      
+      const totalResults = cachedResult.details.length;
+      const startIndex = (page - 1) * count;
+      const paginatedDetails = cachedResult.details.slice(startIndex, startIndex + count);
+
       return {
         statusCode: 200,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(cachedResult),
+        body: JSON.stringify({
+          ...cachedResult,
+          details: paginatedDetails,
+          results_available: totalResults,
+          results_start: startIndex + 1,
+        }),
       };
     }
 
@@ -261,20 +276,30 @@ const handler: Handler = async (event: HandlerEvent, context: HandlerContext) =>
       return isValidPrefecture && isValidCity && isValidSmallArea;
     });
 
-    const finalResult: FetchResult = {
-      details,
-      // ソース情報をユニーク化 (重複するURIを排除)
+    const totalResults = details.length;
+    const startIndex = (page - 1) * count;
+    const paginatedDetails = details.slice(startIndex, startIndex + count);
+
+    const finalResultForClient = {
+      details: paginatedDetails,
       sources: [...new Set(sources.map(s => JSON.stringify(s)))].map(s => JSON.parse(s)),
-      ...(warning && { warning }), // warningがある場合のみ結果に含める
+      results_available: totalResults,
+      results_start: startIndex + 1,
+      ...(warning && { warning }),
     };
 
-    // キャッシュに保存
-    cache.set(cacheKey, finalResult);
+    // キャッシュには全件保存
+    const fullResultForCache = {
+      details,
+      sources: [...new Set(sources.map(s => JSON.stringify(s)))].map(s => JSON.parse(s)),
+      ...(warning && { warning }),
+    };
+    cache.set(cacheKey, fullResultForCache);
 
     return {
       statusCode: 200,
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(finalResult),
+      body: JSON.stringify(finalResultForClient),
     };
   } catch (error: unknown) { // 最上位のcatchブロックもunknownに変更
     console.error("Error in gemini-search function:", error);

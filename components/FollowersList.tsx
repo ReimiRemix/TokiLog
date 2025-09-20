@@ -12,6 +12,8 @@ import type { UserProfile } from '../types';
 import LockIcon from './icons/LockIcon';
 import PlusIcon from './icons/PlusIcon';
 import ClockIcon from './icons/ClockIcon';
+import PlusIcon from './icons/PlusIcon';
+import ClockIcon from './icons/ClockIcon';
 
 interface FollowersListProps {
   onSelectUser: (userId: string) => void;

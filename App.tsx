@@ -100,6 +100,7 @@ const App: React.FC = () => {
 
   const queryClient = useQueryClient();
   const [hotpepperPage, setHotpepperPage] = useState(1);
+  const [hotpepperResultsInfo, setHotpepperResultsInfo] = useState<{ available: number, returned: number, start: number } | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const { data: followCountsData, isLoading: isFollowCountsLoading } = useQuery({
@@ -121,6 +122,8 @@ const App: React.FC = () => {
   const [authLoading, setAuthLoading] = useState(true);
   const [hotpepperResults, setHotpepperResults] = useState<SearchResult[]>([]);
   const [geminiResults, setGeminiResults] = useState<SearchResult[]>([]);
+  const [geminiPage, setGeminiPage] = useState(1);
+  const [geminiResultsInfo, setGeminiResultsInfo] = useState<{ available: number, returned: number, start: number } | null>(null);
   const [activeSearchTab, setActiveSearchTab] = useState<'hotpepper' | 'ai'>('hotpepper');
   const [geminiSearchTriggered, setGeminiSearchTriggered] = useState(false);
   const [currentSearchQuery, setCurrentSearchQuery] = useState<SearchQuery | null>(null);
@@ -515,7 +518,7 @@ const App: React.FC = () => {
   // --- Mutations with React Query ---
   
   const geminiSearchMutation = useMutation({
-    mutationFn: async (query: SearchQuery) => {
+    mutationFn: async (query: SearchQuery & { page?: number }) => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         fetch('/.netlify/functions/log-api-usage', {
@@ -527,13 +530,37 @@ const App: React.FC = () => {
           body: JSON.stringify({ api_type: 'gemini-search' }),
         });
       }
-      const { fetchRestaurantDetails } = await import('./services/geminiService');
-      return fetchRestaurantDetails(query);
+      
+      const response = await fetch('/.netlify/functions/gemini-search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(query),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'AI検索に失敗しました。');
+      }
+
+      return (await response.json()) as { details: HotpepperRestaurant[], sources: any[], results_available: number, results_returned: number, results_start: number, warning?: string };
     },
     onSuccess: (data) => {
         const newGeminiResults = (data.details || []).map(detail => ({ ...detail, sources: data.sources, isFromHotpepper: false as const }));
         setGeminiResults(newGeminiResults);
+        setGeminiResultsInfo({
+          available: data.results_available,
+          returned: data.results_returned,
+          start: data.results_start,
+        });
+        if (data.warning) {
+          // Optionally handle the warning, e.g., show a toast notification
+          console.warn("AI Search Warning:", data.warning);
+        }
     },
+    onError: () => {
+      setGeminiResults([]);
+      setGeminiResultsInfo(null);
+    }
   });
   
   const hotpepperSearchMutation = useMutation({
@@ -547,14 +574,20 @@ const App: React.FC = () => {
         const errorData = await response.json();
         throw new Error(errorData.error || 'ホットペッパーAPIでの検索に失敗しました。');
       }
-      return (await response.json()) as HotpepperRestaurant[];
+      return (await response.json()) as { restaurants: HotpepperRestaurant[], results_available: number, results_returned: number, results_start: number };
     },
     onSuccess: (data, query) => {
-      setHotpepperResults(data);
+      setHotpepperResults(data.restaurants);
+      setHotpepperResultsInfo({
+        available: data.results_available,
+        returned: data.results_returned,
+        start: data.results_start,
+      });
       setSearchError(null); // Clear previous errors on new success
     },
     onError: (error) => {
-      setSearchResults([]);
+      setHotpepperResults([]);
+      setHotpepperResultsInfo(null);
       setSearchError(error.message); // Set error message to display
     },
   });
@@ -823,6 +856,9 @@ const App: React.FC = () => {
       setCurrentSearchQuery(null);
       setSearchError(null);
       setHotpepperPage(1);
+      setHotpepperResultsInfo(null);
+      setGeminiPage(1);
+      setGeminiResultsInfo(null);
     }
     // If the view changes to anything other than 'followed', deselect any followed user
     if (view !== 'followed') {
@@ -845,6 +881,9 @@ const App: React.FC = () => {
     setActiveSearchTab('hotpepper');
     setCurrentSearchQuery(query);
     setHotpepperPage(1); // Reset page to 1 on new search
+    setHotpepperResultsInfo(null);
+    setGeminiPage(1);
+    setGeminiResultsInfo(null);
     setGeminiSearchTriggered(false);
     setAddRestaurantSuccessMessage(null); // Clear success message on new search
     setSearchError(null); // Clear previous errors on new search
@@ -855,6 +894,12 @@ const App: React.FC = () => {
     if (!currentSearchQuery) return;
     setHotpepperPage(newPage);
     hotpepperSearchMutation.mutate({ ...currentSearchQuery, page: newPage });
+  };
+
+  const handleGeminiPageChange = (newPage: number) => {
+    if (!currentSearchQuery) return;
+    setGeminiPage(newPage);
+    geminiSearchMutation.mutate({ ...currentSearchQuery, page: newPage });
   };
   
   const handleGeocode = async (address: string) => {
@@ -1154,7 +1199,7 @@ const App: React.FC = () => {
                         onClick={() => {
                           setActiveSearchTab('ai');
                           if (currentSearchQuery && !geminiResults.length && !geminiSearchMutation.isPending) {
-                            geminiSearchMutation.mutate(currentSearchQuery);
+                            geminiSearchMutation.mutate({ ...currentSearchQuery, page: 1 });
                           }
                         }}
                         className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm ${
@@ -1188,10 +1233,12 @@ const App: React.FC = () => {
                             >
                               前のページ
                             </button>
-                            <span className="text-light-text dark:text-dark-text">{hotpepperPage}</span>
+                            <span className="text-light-text dark:text-dark-text">
+                              {hotpepperResultsInfo ? `${Math.ceil(hotpepperResultsInfo.start / 50)} / ${Math.ceil(hotpepperResultsInfo.available / 50)}` : hotpepperPage}
+                            </span>
                             <button
                               onClick={() => handleHotpepperPageChange(hotpepperPage + 1)}
-                              disabled={hotpepperResults.length < 50 || hotpepperSearchMutation.isPending}
+                              disabled={!hotpepperResultsInfo || hotpepperResultsInfo.start + hotpepperResultsInfo.returned > hotpepperResultsInfo.available || hotpepperSearchMutation.isPending}
                               className="px-4 py-2 text-sm font-semibold rounded-md bg-light-primary text-white hover:bg-light-primary-hover dark:bg-dark-primary dark:text-slate-900 dark:hover:bg-dark-primary-hover transition-colors disabled:opacity-50"
                             >
                               次のページ
@@ -1210,6 +1257,27 @@ const App: React.FC = () => {
                           isAddingToFavorites={addRestaurantMutation.isPending}
                           onAnalyzeRestaurant={analyzeRestaurantMutation.mutateAsync}
                         />
+                        {geminiResults.length > 0 && (
+                          <div className="flex justify-center items-center space-x-4 mt-6">
+                            <button
+                              onClick={() => handleGeminiPageChange(geminiPage - 1)}
+                              disabled={geminiPage === 1 || geminiSearchMutation.isPending}
+                              className="px-4 py-2 text-sm font-semibold rounded-md bg-light-primary text-white hover:bg-light-primary-hover dark:bg-dark-primary dark:text-slate-900 dark:hover:bg-dark-primary-hover transition-colors disabled:opacity-50"
+                            >
+                              前のページ
+                            </button>
+                            <span className="text-light-text dark:text-dark-text">
+                              {geminiResultsInfo ? `${Math.ceil(geminiResultsInfo.start / 10)} / ${Math.ceil(geminiResultsInfo.available / 10)}` : geminiPage}
+                            </span>
+                            <button
+                              onClick={() => handleGeminiPageChange(geminiPage + 1)}
+                              disabled={!geminiResultsInfo || geminiResultsInfo.start + geminiResultsInfo.returned > geminiResultsInfo.available || geminiSearchMutation.isPending}
+                              className="px-4 py-2 text-sm font-semibold rounded-md bg-light-primary text-white hover:bg-light-primary-hover dark:bg-dark-primary dark:text-slate-900 dark:hover:bg-dark-primary-hover transition-colors disabled:opacity-50"
+                            >
+                              次のページ
+                            </button>
+                          </div>
+                        )}
                       </>
                     )}
                   </div>

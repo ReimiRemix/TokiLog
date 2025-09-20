@@ -142,10 +142,17 @@ ${JSON.stringify(query, null, 2)}
         };
     });
     
+    const responseBody = {
+        restaurants: formattedResults,
+        results_available: data.results.results_available,
+        results_returned: data.results.results_returned,
+        results_start: data.results.results_start,
+    };
+    
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(formattedResults),
+      body: JSON.stringify(responseBody),
     };
 
   } catch (error) {
