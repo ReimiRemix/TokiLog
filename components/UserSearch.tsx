@@ -116,21 +116,21 @@ const UserSearch: React.FC<UserSearchProps> = ({ user: currentUser }) => {
     <div className="space-y-6">
       <div className="bg-light-card dark:bg-dark-card p-6 rounded-ui-medium shadow-soft border border-light-border dark:border-dark-border">
         <h2 className="text-2xl font-bold mb-4 text-light-text dark:text-dark-text">ユーザーを探す</h2>
-        <form onSubmit={handleSearch} className="flex items-center">
+        <form onSubmit={handleSearch} className="flex flex-col sm:flex-row items-center gap-2">
           <input
             type="text"
             value={searchTerm}
             onChange={handleSearchTermChange}
             placeholder="ユーザー名または表示名で検索"
-            className="flex-grow p-3 border border-light-border dark:border-dark-border rounded-l-lg bg-light-bg dark:bg-dark-bg text-light-text dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-light-primary transition"
+            className="flex-grow w-full p-3 border border-light-border dark:border-dark-border rounded-lg sm:rounded-l-lg sm:rounded-r-none bg-light-bg dark:bg-dark-bg text-light-text dark:text-dark-text focus:outline-none focus:ring-2 focus:ring-light-primary transition"
             disabled={isGlobalLoading}
           />
           <button
             type="submit"
-            className="bg-light-primary text-white p-3 rounded-r-lg hover:bg-light-primary-hover dark:bg-dark-primary dark:text-slate-900 dark:hover:bg-dark-primary-hover disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-light-primary text-white p-3 rounded-lg sm:rounded-r-lg sm:rounded-l-none hover:bg-light-primary-hover dark:bg-dark-primary dark:text-slate-900 dark:hover:bg-dark-primary-hover disabled:opacity-50 disabled:cursor-not-allowed w-full sm:w-auto"
             disabled={isGlobalLoading || !searchTerm.trim()}
           >
-            {isLoading ? <LoadingSpinner /> : <SearchIcon className="h-6 w-6" />}
+            {isLoading ? <LoadingSpinner /> : <><SearchIcon className="h-6 w-6" /><span className="sm:hidden">検索</span></>}
           </button>
         </form>
       </div>
@@ -152,15 +152,19 @@ const UserSearch: React.FC<UserSearchProps> = ({ user: currentUser }) => {
               <UserCard key={user.id} user={user}>
                 {!isCurrentUser && (
                   <button
-                    onClick={() => sendFollowRequestMutation.mutate(user.id)}
-                    className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                      buttonState.disabled
+                    onClick={(e) => { e.stopPropagation(); sendFollowRequestMutation.mutate(user.id); }}
+                    className={`
+                      ${buttonState.disabled
                         ? 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300 cursor-not-allowed'
                         : 'bg-light-primary text-white hover:bg-light-primary-hover dark:bg-dark-primary dark:text-slate-900 dark:hover:bg-dark-primary-hover'
-                    }`}
+                      }`}
                     disabled={buttonState.disabled || sendFollowRequestMutation.isPending}
+                    isActionButton={true} // Mark as action button
                   >
-                    {buttonState.text}
+                    {buttonState.text === 'フォロー中' && <CheckIcon className="w-4 h-4" />}
+                    {buttonState.text === 'リクエスト済み' && <ClockIcon className="w-4 h-4" />}
+                    {buttonState.text === 'フォローする' && <PlusIcon className="w-4 h-4" />}
+                    <span>{buttonState.text}</span>
                   </button>
                 )}
               </UserCard>

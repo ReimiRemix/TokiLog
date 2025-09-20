@@ -9,6 +9,8 @@ import ConfirmationModal from './ConfirmationModal';
 import { useFollow } from '../contexts/FollowContext';
 import UserCard from './UserCard';
 import type { UserProfile } from '../types';
+import MinusIcon from './icons/MinusIcon';
+import LockIcon from './icons/LockIcon';
 
 interface FollowedUser {
   followed_user_id: string;
@@ -133,25 +135,24 @@ const FollowedUsersList: React.FC<FollowedUsersListProps> = ({ onSelectUser }) =
             };
 
             return (
-              <UserCard key={userProfile.id} user={userProfile} onClick={onSelectUser}>
-                {isMutual && (
-                  <span className="text-xs font-semibold text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/50 px-2 py-1 rounded-full">
-                    相互フォロー
-                  </span>
-                )}
+              <UserCard key={userProfile.id} user={userProfile} onClick={onSelectUser} isMutual={isMutual}>
                 <button
                   onClick={(e) => { e.stopPropagation(); setUserToUnfollow(user); }}
                   disabled={unfollowMutation.isPending}
-                  className="bg-slate-200 dark:bg-slate-700 px-3 py-2 rounded-lg text-sm font-semibold hover:bg-slate-300 dark:hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="bg-slate-200 dark:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  isActionButton={true} // Mark as action button
                 >
-                  フォロー解除
+                  <MinusIcon className="w-4 h-4" />
+                  <span>フォロー解除</span>
                 </button>
                 <button
                   onClick={(e) => { e.stopPropagation(); setUserToBlock(user); }}
                   disabled={blockMutation.isPending}
-                  className="bg-red-500 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="bg-red-500 text-white hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                  isActionButton={true} // Mark as action button
                 >
-                  ブロック
+                  <LockIcon className="w-4 h-4" />
+                  <span>ブロック</span>
                 </button>
               </UserCard>
             );

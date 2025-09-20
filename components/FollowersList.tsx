@@ -9,6 +9,7 @@ import ConfirmationModal from './ConfirmationModal';
 import { useFollow } from '../contexts/FollowContext';
 import UserCard from './UserCard';
 import type { UserProfile } from '../types';
+import LockIcon from './icons/LockIcon';
 
 interface FollowersListProps {
   onSelectUser: (userId: string) => void;
@@ -123,26 +124,28 @@ const FollowersList: React.FC<FollowersListProps> = ({ onSelectUser }) => {
             };
 
             return (
-              <UserCard key={userProfile.id} user={userProfile} onClick={isMutual ? onSelectUser : undefined}>
+              <UserCard key={userProfile.id} user={userProfile} onClick={isMutual ? onSelectUser : undefined} isMutual={isMutual}>
                 {isMutual ? (
-                  <span className="text-xs font-semibold text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/50 px-2 py-1 rounded-full">
-                    相互フォロー
-                  </span>
+                  null // Rendered inside UserCard now
                 ) : (
                   <button 
                       onClick={(e) => { e.stopPropagation(); sendFollowRequestMutation.mutate(follower.follower_id); }}
                       disabled={sendFollowRequestMutation.isPending || hasSentRequest}
-                      className="text-sm font-semibold px-4 py-2 rounded-lg bg-light-primary text-white hover:bg-light-primary-hover dark:bg-dark-primary dark:text-slate-900 dark:hover:bg-dark-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="text-sm font-semibold bg-light-primary text-white hover:bg-light-primary-hover dark:bg-dark-primary dark:text-slate-900 dark:hover:bg-dark-primary-hover disabled:opacity-50 disabled:cursor-not-allowed"
+                      isActionButton={true} // Mark as action button
                   >
-                      {hasSentRequest ? 'リクエスト済み' : 'フォローバック'}
+                      {hasSentRequest ? <ClockIcon className="w-4 h-4" /> : <PlusIcon className="w-4 h-4" />}
+                      <span>{hasSentRequest ? 'リクエスト済み' : 'フォローバック'}</span>
                   </button>
                 )}
                 <button 
                   onClick={(e) => { e.stopPropagation(); setUserToBlock(follower); }}
-                  className="bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/50 dark:text-red-300 dark:hover:bg-red-900 px-3 py-2 rounded-lg text-sm font-semibold disabled:opacity-50"
+                  className="bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/50 dark:text-red-300 dark:hover:bg-red-900 disabled:opacity-50"
                   disabled={blockMutation.isPending}
+                  isActionButton={true} // Mark as action button
                 >
-                  ブロック
+                  <LockIcon className="w-4 h-4" />
+                  <span>ブロック</span>
                 </button>
               </UserCard>
             );
