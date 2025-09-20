@@ -4,8 +4,8 @@ import RestaurantCard from './RestaurantCard';
 
 interface RestaurantListProps {
   restaurants: Restaurant[];
-  myRestaurants?: Restaurant[]; // Optional: needed for checking if a restaurant is already a favorite
-  onAddToFavorites?: (restaurant: Restaurant) => void; // Optional: for adding from a friend's list
+  myRestaurants?: Restaurant[];
+  onAddToFavorites?: (restaurant: Restaurant) => void;
   onDeleteRestaurant: (id: string, name: string) => void;
   onUpdateRestaurant: (id: string, updatedData: Partial<Pick<Restaurant, 'visitCount' | 'userComment' | 'customUrl' | 'genres' | 'priceRange' | 'isClosed'>>) => void;
   onFixLocation: (restaurant: Restaurant) => void;
@@ -13,6 +13,9 @@ interface RestaurantListProps {
   onOpenLocationEditor: (restaurant: Restaurant) => void;
   isReadOnly: boolean;
   onRefetchRestaurant: (restaurant: Restaurant) => void;
+  onAnalyzeRestaurant: (restaurant: Restaurant) => void;
+  isAnalyzing: boolean;
+  analyzingRestaurantId?: string;
 }
 
 const RestaurantList: React.FC<RestaurantListProps> = ({
@@ -26,6 +29,9 @@ const RestaurantList: React.FC<RestaurantListProps> = ({
   onOpenLocationEditor,
   isReadOnly,
   onRefetchRestaurant,
+  onAnalyzeRestaurant,
+  isAnalyzing,
+  analyzingRestaurantId,
 }) => {
   if (restaurants.length === 0) {
     return (
@@ -51,6 +57,8 @@ const RestaurantList: React.FC<RestaurantListProps> = ({
           onOpenLocationEditor={onOpenLocationEditor}
           isReadOnly={isReadOnly}
           onRefetch={onRefetchRestaurant}
+          onAnalyze={onAnalyzeRestaurant}
+          isAnalyzing={isAnalyzing && analyzingRestaurantId === restaurant.id}
         />
       ))}
     </div>

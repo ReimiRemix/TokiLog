@@ -200,7 +200,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         {showFullContent && (
           <div className="flex items-center gap-2">
             <CustomLogIcon className="w-8 h-8 text-light-primary dark:text-dark-primary" />
-            <h2 className="text-xl font-bold text-light-text dark:text-dark-text">Gourmet Log</h2>
+            <h2 className="text-xl font-bold text-light-text dark:text-dark-text">ロケレコ</h2>
           </div>
         )}
         <button onClick={onClose} className="p-1 text-light-text-secondary dark:text-dark-text-secondary hover:text-light-text dark:hover:text-dark-text md:hidden" aria-label="メニューを閉じる">

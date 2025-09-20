@@ -9,13 +9,12 @@ interface AreaFilterSidebarProps {
   restaurants: Restaurant[];
   prefectureOrder: string[];
   onFilterChange: (filters: SidebarFilter[]) => void;
-  onScrollToRestaurant: (restaurantId: string) => void;
   activeFilter: SidebarFilter[];
   isOpen: boolean;
   onClose: () => void;
   isReadOnly: boolean;
-  isMobile: boolean; // New prop
-  isOverlayMode: boolean; // New prop
+  isMobile: boolean;
+  isOverlayMode: boolean;
   style?: React.CSSProperties;
 }
 
@@ -23,39 +22,33 @@ const AreaFilterSidebar: React.FC<AreaFilterSidebarProps> = ({
   restaurants,
   prefectureOrder,
   onFilterChange,
-  onScrollToRestaurant,
   activeFilter,
   isOpen,
   onClose,
   isReadOnly,
-  isMobile, // Destructure new prop
-  isOverlayMode, // Destructure new prop
+  isOverlayMode,
   style,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [expanded, setExpanded] = useState<{ [key: string]: boolean }>({});
 
-  const grouped = useMemo(() => {
-    return restaurants.reduce<Record<string, Record<string, Restaurant[]>>>((acc, restaurant) => {
+  const groupedByArea = useMemo(() => {
+    return restaurants.reduce<Record<string, Record<string, number>>>((acc, restaurant) => {
       const { prefecture, city } = restaurant;
-      if (!acc[prefecture]) {
-        acc[prefecture] = {};
-      }
-      if (!acc[prefecture][city]) {
-        acc[prefecture][city] = [];
-      }
-      acc[prefecture][city].push(restaurant);
+      if (!acc[prefecture]) acc[prefecture] = {};
+      if (!acc[prefecture][city]) acc[prefecture][city] = 0;
+      acc[prefecture][city]++;
       return acc;
     }, {});
   }, [restaurants]);
 
   const sortedPrefectures = useMemo(() => {
-    return Object.keys(grouped).sort((a, b) => {
+    return Object.keys(groupedByArea).sort((a, b) => {
       const indexA = prefectureOrder.indexOf(a);
       const indexB = prefectureOrder.indexOf(b);
       return (indexA === -1 ? 99 : indexA) - (indexB === -1 ? 99 : indexB);
     });
-  }, [grouped, prefectureOrder]);
+  }, [groupedByArea, prefectureOrder]);
 
   const lowercasedQuery = searchQuery.toLowerCase();
 
@@ -63,34 +56,22 @@ const AreaFilterSidebar: React.FC<AreaFilterSidebarProps> = ({
     if (!lowercasedQuery) return sortedPrefectures;
     return sortedPrefectures.filter(prefecture => {
       if (prefecture.toLowerCase().includes(lowercasedQuery)) return true;
-      const cities = grouped[prefecture];
-      return Object.entries(cities).some(([city, cityRestaurants]) => {
-        if (city.toLowerCase().includes(lowercasedQuery)) return true;
-        return cityRestaurants.some(r => r.name.toLowerCase().includes(lowercasedQuery));
-      });
+      const cities = groupedByArea[prefecture];
+      return Object.keys(cities).some(city => city.toLowerCase().includes(lowercasedQuery));
     });
-  }, [sortedPrefectures, grouped, lowercasedQuery]);
+  }, [sortedPrefectures, groupedByArea, lowercasedQuery]);
 
   useEffect(() => {
     if (lowercasedQuery) {
       const newExpanded: { [key: string]: boolean } = {};
-      filteredPrefectures.forEach(pref => {
-        newExpanded[pref] = true;
-        const cities = grouped[pref];
-        Object.keys(cities).forEach(city => {
-            const cityRestaurants = cities[city];
-            if (city.toLowerCase().includes(lowercasedQuery) || cityRestaurants.some(r => r.name.toLowerCase().includes(lowercasedQuery))) {
-                newExpanded[`${pref}-${city}`] = true;
-            }
-        });
-      });
+      filteredPrefectures.forEach(pref => { newExpanded[pref] = true; });
       setExpanded(newExpanded);
     } else {
       setExpanded({});
     }
-  }, [lowercasedQuery, filteredPrefectures, grouped]);
+  }, [lowercasedQuery, filteredPrefectures]);
 
-  const togglePrefectureExpansion = (key: string) => {
+  const toggleExpansion = (key: string) => {
     setExpanded(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
@@ -110,10 +91,10 @@ const AreaFilterSidebar: React.FC<AreaFilterSidebarProps> = ({
       className={twMerge(
         "fixed inset-y-0 h-full bg-light-card dark:bg-dark-card border-r border-light-border dark:border-dark-border p-4 flex flex-col",
         "transform transition-transform duration-300 ease-in-out",
-        isOverlayMode ? "inset-0 z-50" : "z-40 w-80", // Overlay vs. Side-by-side styling
-        isOpen ? "translate-x-0" : "-translate-x-full", // Always controlled by isOpen
+        isOverlayMode ? "inset-0 z-50" : "z-40 w-80",
+        isOpen ? "translate-x-0" : "-translate-x-full",
       )}
-      style={isOverlayMode ? {} : style} // Apply style prop only for non-overlay mode
+      style={isOverlayMode ? {} : style}
     >
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-semibold text-light-text dark:text-dark-text">エリアで絞り込み</h3>
@@ -125,7 +106,7 @@ const AreaFilterSidebar: React.FC<AreaFilterSidebarProps> = ({
         <div className="relative mb-4">
           <input
             type="search"
-            placeholder="エリアや店名で検索..."
+            placeholder="都道府県、市区町村で検索..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2 text-sm bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md focus:ring-2 focus:ring-light-primary focus:border-light-primary placeholder:text-light-text-secondary dark:placeholder:text-dark-text-secondary"
@@ -139,83 +120,49 @@ const AreaFilterSidebar: React.FC<AreaFilterSidebarProps> = ({
         {filteredPrefectures.length > 0 ? (
           <ul className="space-y-1">
             {filteredPrefectures.map((prefecture) => {
-              const cities = grouped[prefecture];
+              const cities = groupedByArea[prefecture];
               const isPrefectureActive = activeFilter.some(f => f.type === 'prefecture' && f.value === prefecture);
-              const totalCount = Object.values(cities).flat().length;
-
-              const filteredCities = Object.entries(cities).filter(([city, cityRestaurants]) => {
-                if (!lowercasedQuery) return true;
-                if (prefecture.toLowerCase().includes(lowercasedQuery)) return true;
-                if (city.toLowerCase().includes(lowercasedQuery)) return true;
-                return cityRestaurants.some(r => r.name.toLowerCase().includes(lowercasedQuery));
-              });
+              const totalCount = Object.values(cities).reduce((sum, count) => sum + count, 0);
 
               return (
                 <li key={prefecture}>
-                  <div className={twMerge("flex items-center justify-between rounded-md transition-colors", isPrefectureActive ? 'bg-light-primary-soft-bg dark:bg-dark-primary-soft-bg' : 'hover:bg-slate-100 dark:hover:bg-slate-700/50')}>
+                  <div className={twMerge("flex items-center justify-between rounded-md transition-colors", isPrefectureActive && 'bg-light-primary-soft-bg dark:bg-dark-primary-soft-bg')}>
                     <button
                       onClick={() => handleFilterClick('prefecture', prefecture)}
                       disabled={isReadOnly}
                       className={twMerge(
-                          'flex-grow text-left py-1.5 font-bold text-base flex items-center gap-3 transition-colors',
-                          isPrefectureActive ? 'text-light-primary dark:text-dark-primary' : 'text-light-text dark:text-dark-text',
-                          isPrefectureActive ? 'pl-2 border-l-4 border-light-primary dark:border-dark-primary' : 'pl-3 border-l-4 border-transparent',
+                          'flex-grow text-left py-2 font-bold text-base flex items-center gap-3 transition-colors w-full',
+                          isPrefectureActive ? 'text-light-primary dark:text-dark-primary' : 'text-light-text dark:text-dark-text hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-md',
+                          'pl-3',
                           isReadOnly && 'cursor-not-allowed'
                       )}
                     >
                       {prefecture}
                       <span className="ml-auto text-xs font-medium text-light-text-secondary dark:text-dark-text-secondary bg-slate-200 dark:bg-slate-700 rounded-full px-2 py-0.5">{totalCount}</span>
                     </button>
-                    <button onClick={() => togglePrefectureExpansion(prefecture)} className="p-1.5 mr-1 rounded-md text-light-text-secondary dark:text-dark-text-secondary">
+                    <button onClick={() => toggleExpansion(prefecture)} className="p-2 mr-1 rounded-md text-light-text-secondary dark:text-dark-text-secondary hover:bg-slate-100 dark:hover:bg-slate-700/50">
                       <ChevronDownIcon className={`w-5 h-5 transition-transform duration-200 ${expanded[prefecture] ? 'rotate-180' : ''}`} />
                     </button>
                   </div>
                   {expanded[prefecture] && (
-                    <ul className="pl-4 mt-1 space-y-1 border-l-2 border-light-border dark:border-dark-border ml-2">
-                      {filteredCities.map(([city, cityRestaurants]) => {
+                    <ul className="pl-5 mt-1 space-y-1">
+                      {Object.entries(cities).map(([city, count]) => {
                         const isCityActive = activeFilter.some(f => f.type === 'city' && f.value === city);
-                        const filteredRestaurants = cityRestaurants.filter(r =>
-                            !lowercasedQuery ||
-                            prefecture.toLowerCase().includes(lowercasedQuery) ||
-                            city.toLowerCase().includes(lowercasedQuery) ||
-                            r.name.toLowerCase().includes(lowercasedQuery)
-                        );
-
                         return (
                           <li key={city}>
-                            <div className={twMerge("flex items-center justify-between rounded-md transition-colors", isCityActive ? 'bg-light-primary-soft-bg dark:bg-dark-primary-soft-bg' : 'hover:bg-slate-100 dark:hover:bg-slate-700/50')}>
-                              <button
-                                  onClick={() => handleFilterClick('city', city)}
-                                  disabled={isReadOnly}
-                                  className={twMerge(
-                                      'flex-grow text-left py-1 flex items-center gap-3',
-                                      isCityActive ? 'text-light-primary dark:text-dark-primary font-semibold' : 'text-light-text-secondary dark:text-dark-text-secondary',
-                                      isCityActive ? 'pl-2 border-l-4 border-light-primary dark:border-dark-primary' : 'pl-3 border-l-4 border-transparent',
-                                      isReadOnly && 'cursor-not-allowed'
-                                  )}
-                              >
-                                  {city}
-                                  <span className="ml-auto text-xs font-normal text-light-text-secondary dark:text-dark-text-secondary bg-slate-200 dark:bg-slate-700 rounded-full px-2 py-0.5">{cityRestaurants.length}</span>
-                              </button>
-                              <button onClick={() => togglePrefectureExpansion(`${prefecture}-${city}`)} className="p-1.5 mr-1 rounded-md text-light-text-secondary dark:text-dark-text-secondary">
-                                  <ChevronDownIcon className={`w-4 h-4 transition-transform duration-200 ${expanded[`${prefecture}-${city}`] ? 'rotate-180' : ''}`} />
-                              </button>
-                            </div>
-                            {expanded[`${prefecture}-${city}`] && (
-                              <ul className="pl-4 mt-1">
-                                {filteredRestaurants.map(restaurant => (
-                                  <li key={restaurant.id}>
-                                    <button
-                                      onClick={() => onScrollToRestaurant(restaurant.id)}
-                                      className="w-full text-left px-2 py-1 text-sm font-normal text-light-text-secondary dark:text-dark-text-secondary hover:text-light-text dark:hover:text-dark-text hover:bg-slate-100 dark:hover:bg-slate-700/80 rounded-md truncate transition-colors"
-                                      title={restaurant.name}
-                                    >
-                                      {restaurant.name}
-                                    </button>
-                                  </li>
-                                ))}
-                              </ul>
-                            )}
+                            <button
+                                onClick={() => handleFilterClick('city', city)}
+                                disabled={isReadOnly}
+                                className={twMerge(
+                                    'flex-grow text-left py-1.5 flex items-center gap-3 transition-colors w-full rounded-md',
+                                    isCityActive ? 'text-light-primary dark:text-dark-primary font-semibold bg-light-primary-soft-bg dark:bg-dark-primary-soft-bg' : 'text-light-text-secondary dark:text-dark-text-secondary hover:bg-slate-100 dark:hover:bg-slate-700/50',
+                                    'pl-3',
+                                    isReadOnly && 'cursor-not-allowed'
+                                )}
+                            >
+                                {city}
+                                <span className="ml-auto text-xs font-normal text-light-text-secondary dark:text-dark-text-secondary bg-slate-200 dark:bg-slate-700 rounded-full px-2 py-0.5">{count}</span>
+                            </button>
                           </li>
                         );
                       })}
@@ -227,7 +174,7 @@ const AreaFilterSidebar: React.FC<AreaFilterSidebarProps> = ({
           </ul>
         ) : (
           <p className="text-center text-sm text-light-text-secondary dark:text-dark-text-secondary mt-8">
-            検索条件に一致するお店は見つかりませんでした。
+            検索条件に一致するエリアは見つかりませんでした。
           </p>
         )}
       </div>

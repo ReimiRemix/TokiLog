@@ -7,6 +7,8 @@ import { unfollowUser, getFollowers, Follower } from '../services/followService'
 import { blockUser } from '../services/blockService';
 import ConfirmationModal from './ConfirmationModal';
 import { useFollow } from '../contexts/FollowContext';
+import UserCard from './UserCard';
+import type { UserProfile } from '../types';
 
 interface FollowedUser {
   followed_user_id: string;
@@ -98,7 +100,7 @@ const FollowedUsersList: React.FC<FollowedUsersListProps> = ({ onSelectUser }) =
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center p-4">
+      <div className="flex justify-center items-center p-8">
         <LoadingSpinner />
         <span className="ml-2 text-light-text dark:text-dark-text">フォロー中のユーザーを読み込み中...</span>
       </div>
@@ -106,62 +108,53 @@ const FollowedUsersList: React.FC<FollowedUsersListProps> = ({ onSelectUser }) =
   }
 
   if (error) {
-    return <div className="text-red-500 p-4">エラー: {error.message}</div>;
+    return <div className="text-red-500 p-4 text-center bg-red-100 dark:bg-red-900/50 rounded-lg">エラー: {error.message}</div>;
   }
 
   if (followedUsers.length === 0) {
-    return <div className="text-light-text-secondary dark:text-dark-text-secondary p-4 text-center">フォロー中のユーザーはいません。</div>;
+    return <div className="text-light-text-secondary dark:text-dark-text-secondary p-8 text-center">フォロー中のユーザーはいません。</div>;
   }
 
   return (
     <>
-      <div className="p-4">
-        <h2 className="text-2xl font-bold mb-4 text-light-text dark:text-dark-text">フォロー中のユーザー</h2>
+      <div className="space-y-6">
+        <h2 className="text-2xl font-bold text-light-text dark:text-dark-text px-4">フォロー中のユーザー</h2>
         <div className="space-y-3">
           {followedUsers.map((user) => {
-
             const isMutual = followerIds.has(user.followed_user_id);
+            
+            // Normalize the user data to UserProfile format
+            const userProfile: UserProfile = {
+              id: user.followed_user_id,
+              username: user.followed_username,
+              display_name: user.followed_display_name,
+              avatar_url: '', // Not available in this context
+              is_super_admin: false, // Not available in this context
+            };
+
             return (
-              <div
-                key={user.followed_user_id}
-                className="flex items-center justify-between bg-light-card dark:bg-dark-card p-3 rounded-md shadow-sm border border-light-border dark:border-dark-border"
-              >
-                <div
-                  className="flex-grow cursor-pointer"
-                  onClick={() => {
-                    onSelectUser(user.followed_user_id);
-                  }}
+              <UserCard key={userProfile.id} user={userProfile} onClick={onSelectUser}>
+                {isMutual && (
+                  <span className="text-xs font-semibold text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/50 px-2 py-1 rounded-full">
+                    相互フォロー
+                  </span>
+                )}
+                <button
+                  onClick={(e) => { e.stopPropagation(); setUserToUnfollow(user); }}
+                  disabled={unfollowMutation.isPending}
+                  className="bg-slate-200 dark:bg-slate-700 px-3 py-2 rounded-lg text-sm font-semibold hover:bg-slate-300 dark:hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <p className="font-semibold text-light-text dark:text-dark-text">
-                    {user.followed_display_name || user.followed_username}
-                  </p>
-                  <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">
-                    @{user.followed_username}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  {isMutual && (
-                      <span className="text-xs font-semibold text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/50 px-2 py-1 rounded-full">
-                          相互フォロー
-                      </span>
-                  )}
-                  <button
-                    onClick={() => setUserToUnfollow(user)}
-                    disabled={unfollowMutation.isPending}
-                    className="bg-slate-200 dark:bg-slate-700 px-3 py-1 rounded-md text-sm hover:bg-slate-300 dark:hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    フォロー解除
-                  </button>
-                  <button
-                    onClick={() => setUserToBlock(user)}
-                    disabled={blockMutation.isPending}
-                    className="bg-red-500 text-white px-3 py-1 rounded-md text-sm hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    ブロック
-                  </button>
-                </div>
-              </div>
-            )
+                  フォロー解除
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setUserToBlock(user); }}
+                  disabled={blockMutation.isPending}
+                  className="bg-red-500 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  ブロック
+                </button>
+              </UserCard>
+            );
           })}
         </div>
       </div>

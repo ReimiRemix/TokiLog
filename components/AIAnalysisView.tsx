@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../supabaseClient';
@@ -33,8 +32,6 @@ const AIAnalysisView: React.FC<AIAnalysisViewProps> = ({ restaurants, user, onSc
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [userInput, setUserInput] = useState('');
   const chatContainerRef = useRef<HTMLDivElement>(null);
-
-  // --- Data Fetching and Mutations ---
 
   const { data: chatHistories = [] } = useQuery<ChatHistory[]>({
     queryKey: ['chatHistories', user.id],
@@ -137,8 +134,6 @@ const AIAnalysisView: React.FC<AIAnalysisViewProps> = ({ restaurants, user, onSc
     }
   });
 
-  // --- Effects ---
-
   useEffect(() => {
     if (selectedChatId === 'new') {
       setMessages([]);
@@ -154,7 +149,6 @@ const AIAnalysisView: React.FC<AIAnalysisViewProps> = ({ restaurants, user, onSc
       }
   }, [messages]);
 
-  // --- Handlers ---
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     const query = userInput.trim();
@@ -177,22 +171,22 @@ const AIAnalysisView: React.FC<AIAnalysisViewProps> = ({ restaurants, user, onSc
         const data = JSON.parse(content) as RecommendationResult;
         if(data.recommendations && data.summary) {
             return (
-                <>
+                <div className="space-y-3">
                     <p className="text-sm whitespace-pre-wrap mb-4">{data.summary}</p>
-                    <div className="space-y-3">
-                        {data.recommendations.map(rec => (
-                            <div key={rec.id} className="p-3 bg-white dark:bg-slate-800 rounded-lg border border-light-border dark:border-dark-border">
-                                <button onClick={() => onScrollToRestaurant(rec.id)} className="font-semibold text-light-primary dark:text-dark-primary hover:underline">{rec.name}</button>
-                                <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary mt-1">{rec.reason}</p>
-                            </div>
-                        ))}
-                    </div>
-                </>
+                    {data.recommendations.map(rec => (
+                        <button 
+                          key={rec.id} 
+                          onClick={() => onScrollToRestaurant(rec.id)} 
+                          className="w-full text-left p-3 bg-white dark:bg-slate-800 rounded-lg border border-light-border dark:border-dark-border transition-all hover:shadow-md hover:border-light-primary/50 dark:hover:border-dark-primary/50"
+                        >
+                            <p className="font-semibold text-light-primary dark:text-dark-primary">{rec.name}</p>
+                            <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary mt-1">{rec.reason}</p>
+                        </button>
+                    ))}
+                </div>
             );
         }
-    } catch (e) {
-      // Not JSON or unexpected format, render as plain text
-    }
+    } catch (e) {}
     return <p className="text-sm whitespace-pre-wrap">{content}</p>;
   }
 
@@ -208,29 +202,30 @@ const AIAnalysisView: React.FC<AIAnalysisViewProps> = ({ restaurants, user, onSc
   return (
     <div className="flex flex-col md:flex-row gap-6 h-[calc(100vh-250px)] animate-slide-down">
       {/* Left Pane: Chat History */}
-      <div className="w-full md:w-1/3 flex flex-col bg-light-card dark:bg-dark-card p-4 rounded-ui-medium shadow-soft border border-light-border dark:border-dark-border">
-        <button
-          onClick={() => setSelectedChatId('new')}
-          className="flex-shrink-0 flex items-center justify-center gap-2 w-full mb-4 px-4 py-2 text-sm font-semibold rounded-md bg-light-primary text-white hover:bg-light-primary-hover dark:bg-dark-primary dark:text-slate-900 dark:hover:bg-dark-primary-hover transition-colors"
-        >
-          <PlusIcon /><span>新しいチャット</span>
-        </button>
-        <h3 className="text-sm font-semibold text-light-text-secondary dark:text-dark-text-secondary uppercase tracking-wider mb-2 px-2">チャット履歴</h3>
-        <div className="flex-grow overflow-y-auto space-y-1 -mr-2 pr-2">
+      <div className="w-full md:w-1/3 lg:w-1/4 flex flex-col bg-light-card dark:bg-dark-card p-3 rounded-xl shadow-soft border border-light-border dark:border-dark-border">
+        <div className="p-2">
+          <button
+            onClick={() => setSelectedChatId('new')}
+            className="flex-shrink-0 flex items-center justify-center gap-2 w-full px-4 py-2.5 text-sm font-semibold rounded-lg bg-light-primary text-white hover:bg-light-primary-hover dark:bg-dark-primary dark:text-slate-900 dark:hover:bg-dark-primary-hover transition-colors"
+          >
+            <PlusIcon /><span>新しいチャット</span>
+          </button>
+        </div>
+        <div className="flex-grow overflow-y-auto space-y-1 mt-2 -mr-2 pr-2">
             {chatHistories.length === 0 && (
-                <p className="text-center text-sm text-light-text-secondary dark:text-dark-text-secondary mt-4">まだチャット履歴がありません。</p>
+                <p className="text-center text-sm text-light-text-secondary dark:text-dark-text-secondary mt-4 px-4">まだチャット履歴がありません。</p>
             )}
             {chatHistories.map(chat => (
                 <div key={chat.id} className={twMerge(
-                    "group flex items-center justify-between p-2 rounded-md cursor-pointer transition-colors",
+                    "group flex items-center justify-between p-2.5 rounded-lg cursor-pointer transition-colors",
                     selectedChatId === chat.id ? "bg-light-primary-soft-bg dark:bg-dark-primary-soft-bg" : "hover:bg-slate-100 dark:hover:bg-slate-700/50"
                 )}>
-                    <div onClick={() => setSelectedChatId(chat.id)} className="flex-grow flex items-center gap-2 truncate">
-                        <MessageSquareIcon className={twMerge("w-4 h-4 flex-shrink-0", selectedChatId === chat.id ? "text-light-primary dark:text-dark-primary" : "text-light-text-secondary dark:text-dark-text-secondary")} />
+                    <div onClick={() => setSelectedChatId(chat.id)} className="flex-grow flex items-center gap-2.5 truncate">
+                        <MessageSquareIcon className={twMerge("w-5 h-5 flex-shrink-0", selectedChatId === chat.id ? "text-light-primary dark:text-dark-primary" : "text-light-text-secondary dark:text-dark-text-secondary")} />
                         <span className={twMerge("text-sm truncate", selectedChatId === chat.id ? "font-semibold text-light-primary dark:text-dark-primary" : "text-light-text dark:text-dark-text")}>{chat.title}</span>
                     </div>
-                    <button onClick={() => deleteChatMutation.mutate(chat.id)} disabled={deleteChatMutation.isPending && deleteChatMutation.variables === chat.id} className="flex-shrink-0 p-1 text-light-text-secondary dark:text-dark-text-secondary rounded-full hover:bg-red-100 dark:hover:bg-red-900/50 hover:text-red-600 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50">
-                        {deleteChatMutation.isPending && deleteChatMutation.variables === chat.id ? <SmallLoadingSpinner/> : <TrashIcon />}
+                    <button onClick={() => deleteChatMutation.mutate(chat.id)} disabled={deleteChatMutation.isPending && deleteChatMutation.variables === chat.id} className="flex-shrink-0 p-1.5 text-light-text-secondary dark:text-dark-text-secondary rounded-full hover:bg-red-100 dark:hover:bg-red-900/50 hover:text-red-600 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50">
+                        {deleteChatMutation.isPending && deleteChatMutation.variables === chat.id ? <SmallLoadingSpinner/> : <TrashIcon className="w-4 h-4"/>}
                     </button>
                 </div>
             ))}
@@ -238,52 +233,54 @@ const AIAnalysisView: React.FC<AIAnalysisViewProps> = ({ restaurants, user, onSc
       </div>
 
       {/* Right Pane: Chat Window */}
-      <div className="w-full md:w-2/3 flex flex-col bg-light-card dark:bg-dark-card rounded-ui-medium shadow-soft border border-light-border dark:border-dark-border">
-          <div ref={chatContainerRef} className="flex-grow p-4 space-y-4 overflow-y-auto">
+      <div className="w-full md:w-2/3 lg:w-3/4 flex flex-col bg-light-card dark:bg-dark-card rounded-xl shadow-soft border border-light-border dark:border-dark-border">
+          <div ref={chatContainerRef} className="flex-grow p-6 space-y-6 overflow-y-auto">
               {messages.length === 0 && (
-                 <div className="h-full flex flex-col items-center justify-center text-center">
-                    <SparklesIcon />
-                    <h3 className="mt-2 text-lg font-semibold text-light-text dark:text-dark-text">AIに相談しましょう</h3>
-                    <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary">「辛いものが食べたい」「記念日におすすめのお店は？」など、気分やシーンを伝えてみてください。</p>
+                 <div className="h-full flex flex-col items-center justify-center text-center p-4">
+                    <div className="w-16 h-16 rounded-full bg-light-primary-soft-bg dark:bg-dark-primary-soft-bg flex items-center justify-center mb-4">
+                      <SparklesIcon className="w-8 h-8 text-light-primary dark:text-dark-primary"/>
+                    </div>
+                    <h3 className="text-xl font-semibold text-light-text dark:text-dark-text">AIに相談しましょう</h3>
+                    <p className="text-base text-light-text-secondary dark:text-dark-text-secondary mt-1">「辛いものが食べたい」「記念日におすすめのお店は？」など、気分やシーンを伝えてみてください。</p>
                  </div>
               )}
               {messages.map((msg, index) => (
                   <div key={index} className={`flex items-start gap-3 ${msg.role === 'user' ? 'justify-end' : ''}`}>
-                      {msg.role === 'model' && <div className="flex-shrink-0 w-8 h-8 rounded-full bg-light-primary-soft-bg dark:bg-dark-primary-soft-bg flex items-center justify-center"><SparklesIcon /></div>}
-                      <div className={`max-w-xl p-3 rounded-lg ${msg.role === 'user' ? 'bg-light-primary text-white dark:bg-dark-primary dark:text-slate-900' : 'bg-slate-100 dark:bg-slate-700/50'}`}>
+                      {msg.role === 'model' && <div className="flex-shrink-0 w-10 h-10 rounded-full bg-light-primary-soft-bg dark:bg-dark-primary-soft-bg flex items-center justify-center"><SparklesIcon className="w-5 h-5 text-light-primary dark:text-dark-primary"/></div>}
+                      <div className={`max-w-2xl p-4 rounded-2xl ${msg.role === 'user' ? 'bg-light-primary text-white dark:bg-dark-primary dark:text-slate-900 rounded-br-none' : 'bg-slate-100 dark:bg-slate-700/50 rounded-bl-none'}`}>
                           {msg.role === 'model' ? parseAndRenderContent(msg.content) : <p className="text-sm whitespace-pre-wrap">{msg.content}</p>}
                       </div>
                   </div>
               ))}
                {recommendationMutation.isPending && (
                     <div className="flex items-start gap-3">
-                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-light-primary-soft-bg dark:bg-dark-primary-soft-bg flex items-center justify-center"><SparklesIcon /></div>
-                        <div className="p-3 bg-slate-100 dark:bg-slate-700/50 rounded-lg"><LoadingSpinner/></div>
+                        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-light-primary-soft-bg dark:bg-dark-primary-soft-bg flex items-center justify-center"><SparklesIcon className="w-5 h-5 text-light-primary dark:text-dark-primary"/></div>
+                        <div className="p-4 bg-slate-100 dark:bg-slate-700/50 rounded-2xl rounded-bl-none"><LoadingSpinner/></div>
                     </div>
                 )}
           </div>
           <div className="p-4 border-t border-light-border dark:border-dark-border">
               {chatHistories.length >= MAX_CHAT_HISTORY && selectedChatId === 'new' && (
-                  <div className="flex items-center gap-2 p-2 mb-2 rounded-md bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-200 text-xs">
-                      <AlertTriangleIcon className="w-8 h-8 flex-shrink-0" />
+                  <div className="flex items-center gap-2 p-3 mb-3 rounded-lg bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-200 text-sm">
+                      <AlertTriangleIcon className="w-10 h-10 flex-shrink-0" />
                       <span>チャット履歴の上限に達しました。新しいチャットを始めるには、左のリストから既存の履歴を削除してください。</span>
                   </div>
               )}
-              <form onSubmit={handleSendMessage} className="flex items-center gap-2">
+              <form onSubmit={handleSendMessage} className="flex items-center gap-3">
                   <input
                       type="text"
                       value={userInput}
                       onChange={(e) => setUserInput(e.target.value)}
                       placeholder="AIに相談する..."
                       disabled={recommendationMutation.isPending || (chatHistories.length >= MAX_CHAT_HISTORY && selectedChatId === 'new')}
-                      className="flex-grow w-full px-4 py-2 text-sm bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-md focus:ring-2 focus:ring-light-primary focus:border-light-primary placeholder:text-light-text-secondary dark:placeholder:text-dark-text-secondary disabled:opacity-50"
+                      className="flex-grow w-full px-4 py-3 text-base bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border rounded-xl focus:ring-2 focus:ring-light-primary focus:border-light-primary placeholder:text-light-text-secondary dark:placeholder:text-dark-text-secondary disabled:opacity-50 transition"
                   />
                   <button
                       type="submit"
                       disabled={!userInput.trim() || recommendationMutation.isPending || (chatHistories.length >= MAX_CHAT_HISTORY && selectedChatId === 'new')}
-                      className="flex-shrink-0 flex items-center justify-center gap-2 w-24 px-4 py-2 text-sm font-semibold rounded-md bg-light-primary text-white hover:bg-light-primary-hover dark:bg-dark-primary dark:text-slate-900 dark:hover:bg-dark-primary-hover transition-colors disabled:opacity-50"
+                      className="flex-shrink-0 flex items-center justify-center w-12 h-12 rounded-xl bg-light-primary text-white hover:bg-light-primary-hover dark:bg-dark-primary dark:text-slate-900 dark:hover:bg-dark-primary-hover transition-colors disabled:opacity-50"
                   >
-                      {recommendationMutation.isPending ? <SmallLoadingSpinner /> : <> <SendIcon /> <span>送信</span> </>}
+                      {recommendationMutation.isPending ? <SmallLoadingSpinner /> : <SendIcon className="w-6 h-6" />}
                   </button>
               </form>
           </div>

@@ -70,29 +70,6 @@ const RestaurantInput: React.FC<RestaurantInputProps> = ({ onSearch, isLoading }
     genre_text: '',
     storeName: '',
   });
-  // smallAreasとgenresのstateは不要になりますが、互換性のため残しておきます
-  const [smallAreas, setSmallAreas] = useState<{ code: string; name: string; }[]>([]);
-  const [genres, setGenres] = useState<{ code: string; name: string; }[]>([]);
-  const [isAreaLoading, setIsAreaLoading] = useState(false);
-  const [isGenreLoading, setIsGenreLoading] = useState(false);
-
-  // ジャンルリストの取得は引き続き行います（参考情報として）
-  useEffect(() => {
-    const fetchGenres = async () => {
-      setIsGenreLoading(true);
-      try {
-        const response = await fetch('/.netlify/functions/hotpepper-genre-master');
-        if (response.ok) {
-          const data = await response.json();
-          setGenres(data);
-        }
-      } catch (error) {
-        console.error("Failed to fetch genres", error);
-      }
-      setIsGenreLoading(false);
-    };
-    fetchGenres();
-  }, []);
 
   const handlePrefectureChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const prefectureName = e.target.value;
@@ -100,23 +77,6 @@ const RestaurantInput: React.FC<RestaurantInputProps> = ({ onSearch, isLoading }
     const prefectureCode = selectedPrefecture ? selectedPrefecture.code : '';
 
     setQuery({ ...query, prefecture: prefectureName, prefecture_code: prefectureCode, small_area_code: '', small_area_text: '' });
-    // smallAreasはUIで使われないため、更新は不要
-    setSmallAreas([]); // クリアしておきます
-
-    // 都道府県が選択されたら、その都道府県の市区町村リストを裏で取得しておきます（参考情報として）
-    if (prefectureCode) {
-      setIsAreaLoading(true);
-      try {
-        const response = await fetch(`/.netlify/functions/hotpepper-area-search?prefecture_code=${prefectureCode}`);
-        if (response.ok) {
-          const data = await response.json();
-          setSmallAreas(data); // 取得したリストを保存
-        }
-      } catch (error) {
-        console.error("Failed to fetch small areas", error);
-      }
-      setIsAreaLoading(false);
-    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -141,74 +101,82 @@ const RestaurantInput: React.FC<RestaurantInputProps> = ({ onSearch, isLoading }
   return (
     <div className="bg-light-card dark:bg-dark-card p-6 rounded-ui-medium shadow-soft border border-light-border dark:border-dark-border animate-slide-down">
         <p className="text-light-text-secondary dark:text-dark-text-secondary mb-6 text-center">探したいお店のエリアと店名・キーワードを入力してください。</p>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label htmlFor="prefecture" className="block text-sm font-medium text-light-text dark:text-dark-text">都道府県 <span className="text-red-500">*</span></label>
-              <select name="prefecture" id="prefecture" value={query.prefecture} onChange={handlePrefectureChange} required className={formInputClasses}>
-                <option value="">選択してください</option>
-                {prefectures.map(p => <option key={p.code} value={p.name}>{p.name}</option>)}              
-              </select>
-            </div>
-            <div>
-              <label htmlFor="small_area_text" className="block text-sm font-medium text-light-text dark:text-dark-text">市区町村</label>
-              <input
-                type="text"
-                id="small_area_text"
-                name="small_area_text"
-                value={query.small_area_text}
-                onChange={handleChange}
-                placeholder="例: 新宿, 渋谷" 
-                className={formInputClasses}
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+            <fieldset className="space-y-4 p-4 border border-light-border dark:border-dark-border rounded-lg">
+              <legend className="text-base font-semibold text-light-text dark:text-dark-text px-2">エリア</legend>
+              <div>
+                <label htmlFor="prefecture" className="block text-sm font-medium text-light-text dark:text-dark-text">都道府県 <span className="text-red-500">*</span></label>
+                <select name="prefecture" id="prefecture" value={query.prefecture} onChange={handlePrefectureChange} required className={formInputClasses}>
+                  <option value="">選択してください</option>
+                  {prefectures.map(p => <option key={p.code} value={p.name}>{p.name}</option>)}              
+                </select>
+              </div>
+              <div>
+                <label htmlFor="small_area_text" className="block text-sm font-medium text-light-text dark:text-dark-text">市区町村</label>
+                <input
+                  type="text"
+                  id="small_area_text"
+                  name="small_area_text"
+                  value={query.small_area_text}
+                  onChange={handleChange}
+                  placeholder="例: 新宿, 渋谷" 
+                  className={formInputClasses}
+                  disabled={isLoading || !query.prefecture.trim()}
+                />
+              </div>
+            </fieldset>
+
+            <fieldset className="space-y-4 p-4 border border-light-border dark:border-dark-border rounded-lg">
+              <legend className="text-base font-semibold text-light-text dark:text-dark-text px-2">お店の種類</legend>
+              <div>
+                <label htmlFor="genre_text" className="block text-sm font-medium text-light-text dark:text-dark-text">ジャンル</label>
+                <input
+                  type="text"
+                  id="genre_text"
+                  name="genre_text"
+                  value={query.genre_text}
+                  onChange={handleChange}
+                  placeholder="例: イタリアン, ラーメン" 
+                  className={formInputClasses}
+                  disabled={isLoading}
+                />
+              </div>
+              <div>
+                <label htmlFor="storeName" className="block text-sm font-medium text-light-text dark:text-dark-text">店名・キーワード</label>
+                <input
+                    type="text"
+                    id="storeName"
+                    name="storeName"
+                    value={query.storeName}
+                    onChange={handleChange}
+                    placeholder="例: 美味しいイタリアン"
+                    className={formInputClasses}
+                    disabled={isLoading}
+                />
+              </div>
+            </fieldset>
+          </div>
+
+          <div className="pt-4 flex justify-end">
+            <button
+                type="submit"
                 disabled={isLoading || !query.prefecture.trim()}
-              />
-            </div>
-            <div>
-              <label htmlFor="genre_text" className="block text-sm font-medium text-light-text dark:text-dark-text">ジャンル</label>
-              <input
-                type="text"
-                id="genre_text"
-                name="genre_text"
-                value={query.genre_text}
-                onChange={handleChange}
-                placeholder="例: イタリアン, ラーメン" 
-                className={formInputClasses}
-                disabled={isLoading}
-              />
-            </div>
+                className="flex items-center justify-center w-full md:w-auto bg-light-primary text-white font-bold px-8 py-3 rounded-lg hover:bg-light-primary-hover dark:bg-dark-primary dark:text-slate-900 dark:hover:bg-dark-primary-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-light-primary transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+                {isLoading ? (
+                <>
+                    <LoadingSpinner />
+                    <span>検索中...</span>
+                </>
+                ) : (
+                <>
+                  <SearchIcon className="w-5 h-5 mr-2" />
+                  <span>お店を検索</span>
+                </>
+                )}
+            </button>
           </div>
-
-          <div>
-            <label htmlFor="storeName" className="block text-sm font-medium text-light-text dark:text-dark-text">店名・キーワード（任意）</label>
-             <input
-                type="text"
-                id="storeName"
-                name="storeName"
-                value={query.storeName}
-                onChange={handleChange}
-                placeholder="例: 美味しいイタリアン, ラーメン"
-                className={formInputClasses}
-                disabled={isLoading}
-            />
-          </div>
-
-          <button
-              type="submit"
-              disabled={isLoading || !query.prefecture.trim()} // 都道府県は必須
-              className="flex items-center justify-center w-full bg-light-primary text-white font-bold px-6 py-3 rounded-lg hover:bg-light-primary-hover dark:bg-dark-primary dark:text-slate-900 dark:hover:bg-dark-primary-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-light-primary transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-              {isLoading ? (
-              <>
-                  <LoadingSpinner />
-                  <span>検索中...</span>
-              </>
-              ) : (
-              <>
-                <SearchIcon className="w-5 h-5 mr-2" />
-                <span>お店を検索</span>
-              </>
-              )}
-          </button>
         </form>
     </div>
   );

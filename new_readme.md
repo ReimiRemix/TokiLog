@@ -1,4 +1,4 @@
-# oplix-Gourmet プロジェクト概要
+# oplix-LocationRecord プロジェクト概要
 
 ## 1. プロジェクトの目的
 

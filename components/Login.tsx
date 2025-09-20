@@ -37,7 +37,7 @@ const Login: React.FC = () => {
         <header className="text-center mb-8">
             <div className="flex justify-center items-center gap-3 mb-2">
                 <ForkKnifeIcon />
-                <h1 className="text-5xl font-extrabold text-light-text dark:text-dark-text tracking-tighter">Gourmet Log</h1>
+                <h1 className="text-5xl font-extrabold text-light-text dark:text-dark-text tracking-tighter">ロケーションレコード</h1>
             </div>
             <p className="text-lg text-light-text-secondary dark:text-dark-text-secondary">AIと紡ぐ、あなただけの美食の記録</p>
         </header>

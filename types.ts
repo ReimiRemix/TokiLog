@@ -133,8 +133,11 @@ export type ShareFilters = {
 } | null;
 
 export interface UserProfile {
+  id: string;
   username: string;
-  display_name: string;
+  display_name: string | null;
   avatar_url: string;
   is_super_admin: boolean;
 }
+
+export type FollowStatus = 'following' | 'pending' | 'none';

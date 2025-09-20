@@ -149,7 +149,7 @@ const MapView: React.FC<MapViewProps> = ({ restaurants, apiKey }) => {
                 <Map
                     defaultCenter={{ lat: 35.6895, lng: 139.6917 }}
                     defaultZoom={5}
-                    mapId={'gourmet-log-map'}
+                    mapId={'location-record-map'}
                     gestureHandling={'greedy'}
                     disableDefaultUI={true}
                     className="w-full h-full"

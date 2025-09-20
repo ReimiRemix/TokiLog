@@ -49,6 +49,7 @@ import PendingRequestsList from './components/PendingRequestsList';
 import BottomTabBar from './components/BottomTabBar';
 import MonitoringView from './components/MonitoringView';
 import NotificationsView from './components/NotificationsView';
+import CustomLogIcon from './components/icons/CustomLogIcon';
 
 
 import { getFollowersCount, getFollowingCount } from './services/followService';
@@ -677,6 +678,51 @@ const App: React.FC = () => {
     onError: (error) => alert(`削除エラー: ${error instanceof Error ? error.message : '不明なエラー'}`),
   });
 
+  const analyzeAndUpdateCommentMutation = useMutation({
+    mutationFn: async (restaurant: Restaurant) => {
+      // Log API usage
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        fetch('/.netlify/functions/log-api-usage', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({ api_type: 'gemini-analyze-restaurant' }),
+        });
+      }
+
+      // Fetch analysis from Gemini
+      const response = await fetch('/.netlify/functions/gemini-analyze-restaurant', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(restaurant),
+      });
+      if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'AIによる店舗分析に失敗しました。');
+      }
+      const analysisResult = await response.json() as { comment: string };
+
+      // Update the restaurant with the new comment
+      const { error: updateError } = await supabase.from('restaurants').update({
+        user_comment: analysisResult.comment,
+      }).eq('id', restaurant.id);
+
+      if (updateError) throw new Error(`コメントの更新に失敗しました: ${updateError.message}`);
+      
+      return restaurant.id;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['restaurants', user?.id] });
+      alert("AIによる分析が完了し、コメントを更新しました。");
+    },
+    onError: (error) => {
+      alert(`AI分析エラー: ${error instanceof Error ? error.message : '不明なエラー'}`);
+    },
+  });
+
   const createShareLinkMutation = useMutation({
     mutationFn: async (filters: ShareFilters) => {
       const { data, error } = await supabase.rpc('create_share_link', {
@@ -1014,7 +1060,6 @@ const App: React.FC = () => {
                       restaurants={isReadOnlyMode ? displayedRestaurants : restaurants}
                       prefectureOrder={prefectureOrder}
                       onFilterChange={setSidebarFilters}
-                      onScrollToRestaurant={handleScrollToRestaurant}
                       activeFilter={sidebarFilters}
                       isOpen={isAreaFilterSidebarOpen}
                       onClose={handleCloseAreaFilter}
@@ -1063,8 +1108,8 @@ const App: React.FC = () => {
                      </button>}
                   </div>
                   <div className="flex items-center gap-2 justify-center flex-grow">
-                      <ForkKnifeIcon className="w-6 h-6 md:w-auto" />
-                      <h1 className="text-xl md:text-3xl font-bold text-light-text dark:text-dark-text tracking-tight">Gourmet Log</h1>
+                      <CustomLogIcon className="w-6 h-6 md:w-auto text-light-primary" />
+                      <h1 className="text-xl md:text-3xl font-bold text-light-text dark:text-dark-text tracking-tight">ロケレコ</h1>
                   </div>
                   <div className="flex items-center gap-2 justify-end flex-shrink-0">
                     {!isReadOnlyMode && user && (
@@ -1418,6 +1463,9 @@ const App: React.FC = () => {
                     onOpenLocationEditor={setRestaurantForLocationEdit}
                     isReadOnly={isRestaurantListReadOnly}
                     onRefetchRestaurant={setRestaurantToUpdate}
+                    onAnalyzeRestaurant={(restaurant) => analyzeAndUpdateCommentMutation.mutate(restaurant)}
+                    isAnalyzing={analyzeAndUpdateCommentMutation.isPending}
+                    analyzingRestaurantId={analyzeAndUpdateCommentMutation.variables?.id}
                   />
                 </div>
               )}
