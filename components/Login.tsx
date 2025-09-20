@@ -37,9 +37,9 @@ const Login: React.FC = () => {
         <header className="text-center mb-8">
             <div className="flex justify-center items-center gap-3 mb-2">
                 <ForkKnifeIcon />
-                <h1 className="text-5xl font-extrabold text-light-text dark:text-dark-text tracking-tighter">ロケーションレコード</h1>
+                <h1 className="text-5xl font-extrabold text-light-text dark:text-dark-text tracking-tighter">ロケレコ</h1>
             </div>
-            <p className="text-lg text-light-text-secondary dark:text-dark-text-secondary">AIと紡ぐ、あなただけの美食の記録</p>
+            <p className="text-lg text-light-text-secondary dark:text-dark-text-secondary">AIと集める、美味のコレクション</p>
         </header>
         
         <div className="bg-light-card dark:bg-dark-card p-8 rounded-ui-medium shadow-soft-lg border border-light-border dark:border-dark-border">
@@ -93,9 +93,7 @@ const Login: React.FC = () => {
                 )}
             </button>
           </form>
-          <p className="text-xs text-center text-light-text-secondary dark:text-dark-text-secondary mt-6">
-            このアプリケーションは共有アカウントで利用します。
-          </p>
+
         </div>
       </div>
     </div>

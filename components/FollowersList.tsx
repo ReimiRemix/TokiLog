@@ -10,6 +10,8 @@ import { useFollow } from '../contexts/FollowContext';
 import UserCard from './UserCard';
 import type { UserProfile } from '../types';
 import LockIcon from './icons/LockIcon';
+import PlusIcon from './icons/PlusIcon';
+import ClockIcon from './icons/ClockIcon';
 
 interface FollowersListProps {
   onSelectUser: (userId: string) => void;

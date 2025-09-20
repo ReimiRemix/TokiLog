@@ -7,6 +7,9 @@ import { User } from '@supabase/supabase-js';
 import { getFollowingUsers, getSentFollowRequests } from '../services/followService';
 import type { UserProfile, FollowStatus } from '../types';
 import UserCard from './UserCard';
+import PlusIcon from './icons/PlusIcon';
+import CheckIcon from './icons/CheckIcon';
+import ClockIcon from './icons/ClockIcon';
 
 interface UserSearchProps {
   user: User;
