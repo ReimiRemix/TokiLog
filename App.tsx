@@ -9,7 +9,7 @@ import SearchResultList from './components/SearchResultList';
 import Sidebar from './components/Sidebar';
 import AreaFilterSidebar from './components/AreaFilterSidebar';
 import MenuIcon from './components/icons/MenuIcon';
-import ForkKnifeIcon from './components/icons/ForkKnifeIcon';
+import minerucaIcon from '/mineruca_icon.png';
 import Login from './components/Login';
 import { supabase } from './supabaseClient';
 import { User } from '@supabase/supabase-js';
@@ -49,8 +49,6 @@ import PendingRequestsList from './components/PendingRequestsList';
 import BottomTabBar from './components/BottomTabBar';
 import MonitoringView from './components/MonitoringView';
 import NotificationsView from './components/NotificationsView';
-import CustomLogIcon from './components/icons/CustomLogIcon';
-
 
 import { getFollowersCount, getFollowingCount } from './services/followService';
 import { FollowProvider } from './contexts/FollowContext';
@@ -960,7 +958,8 @@ const App: React.FC = () => {
         const existingIndex = prev.findIndex(s => s.by === by);
         if (existingIndex > -1) {
             return prev.filter((_, i) => i !== existingIndex);
-        } else {
+        }
+        else {
             const defaultOrder = (by === 'createdAt' || by === 'visitCount') ? 'desc' : 'asc';
             return [...prev, { by, order: defaultOrder }];
         }
@@ -1124,7 +1123,6 @@ const App: React.FC = () => {
                 )}        <main 
           className={twMerge(
             "flex-1 overflow-y-auto transition-all duration-300 ease-in-out",
-            isSidebarOpen && isMobile ? "ml-80" : "", // Push content when mobile sidebar is open
             "md:transition-[margin-left]",
             isReadOnlyMode
               ? "md:ml-0"
@@ -1133,6 +1131,7 @@ const App: React.FC = () => {
               : "md:ml-80",
             isAreaFilterSidebarOpen &&
               !isReadOnlyMode &&
+              !isMobile &&
               (isSidebarCollapsed
                 ? "md:ml-[calc(5rem+20rem)]"
                 : "md:ml-[calc(20rem+20rem)]"),
@@ -1142,7 +1141,7 @@ const App: React.FC = () => {
           onTouchEnd={handleTouchEnd}
         >
           <div className="bg-light-bg dark:bg-dark-bg border-b border-light-border dark:border-dark-border">
-              <div className="px-6 md:px-8 max-w-4xl mx-auto pt-6 md:pt-8">
+              <div className="px-4 md:px-8 max-w-4xl mx-auto pt-6 md:pt-8">
                 <header className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-4 justify-start flex-shrink-0">
                      {(!isReadOnlyMode || (isReadOnlyMode && !user && shareId)) && (
@@ -1153,8 +1152,8 @@ const App: React.FC = () => {
                      </button>}
                   </div>
                   <div className="flex items-center gap-2 justify-center flex-grow">
-                      <CustomLogIcon className="w-6 h-6 md:w-auto text-light-primary" />
-                      <h1 className="text-xl md:text-3xl font-bold text-light-text dark:text-dark-text tracking-tight">ロケレコ</h1>
+                      <img src={minerucaIcon} alt="MINERUCA logo" className="h-16 w-16 md:h-20 md:w-20" />
+                      <h1 className="text-lg sm:text-xl md:text-3xl font-bold text-light-text dark:text-dark-text tracking-tight">MINERUCA</h1>
                   </div>
                   <div className="flex items-center gap-2 justify-end flex-shrink-0">
                     {!isReadOnlyMode && user && (
@@ -1172,7 +1171,7 @@ const App: React.FC = () => {
             </div>
           </div>
           
-          <div className="p-6 md:p-8 max-w-4xl mx-auto">
+          <div className="p-4 md:p-8 max-w-4xl mx-auto">
             <div className="space-y-8">
               {view === 'search' && !isReadOnlyMode && (
                 <>

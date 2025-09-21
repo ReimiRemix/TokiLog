@@ -8,6 +8,14 @@ import { twMerge } from 'tailwind-merge';
 
 type SettingSection = 'profile' | 'account' | 'user-management' | 'blocked-users' | 'danger-zone';
 
+const SettingCard: React.FC<{title: string, description: string, children: React.ReactNode}> = ({title, description, children}) => (
+  <div className="bg-light-card dark:bg-dark-card p-6 rounded-xl shadow-soft border border-light-border dark:border-dark-border">
+    <h3 className="text-xl font-semibold text-light-text dark:text-dark-text">{title}</h3>
+    <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary mt-1 mb-6">{description}</p>
+    {children}
+  </div>
+);
+
 const SettingsPage: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -202,14 +210,6 @@ const SettingsPage: React.FC = () => {
   const formButtonClasses = "px-5 py-2 text-sm font-semibold rounded-md bg-light-primary text-white hover:bg-light-primary-hover dark:bg-dark-primary dark:text-slate-900 dark:hover:bg-dark-primary-hover transition-colors";
 
   const renderSectionContent = () => {
-    const SettingCard: React.FC<{title: string, description: string, children: React.ReactNode}> = ({title, description, children}) => (
-      <div className="bg-light-card dark:bg-dark-card p-6 rounded-xl shadow-soft border border-light-border dark:border-dark-border">
-        <h3 className="text-xl font-semibold text-light-text dark:text-dark-text">{title}</h3>
-        <p className="text-sm text-light-text-secondary dark:text-dark-text-secondary mt-1 mb-6">{description}</p>
-        {children}
-      </div>
-    );
-
     switch (activeSection) {
       case 'profile':
         return (

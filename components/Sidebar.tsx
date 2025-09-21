@@ -16,7 +16,7 @@ import ArrowUpIcon from './icons/ArrowUpIcon';
 import ArrowDownIcon from './icons/ArrowDownIcon';
 import BellIcon from './icons/BellIcon'; // Import BellIcon for pending requests
 import LockIcon from './icons/LockIcon';
-import CustomLogIcon from './icons/CustomLogIcon';
+import minerucaIcon from '/mineruca_icon.png';
 import ActivityIcon from './icons/ActivityIcon';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 
@@ -197,12 +197,6 @@ const Sidebar: React.FC<SidebarProps> = ({
       )}
     >
       <div className="flex justify-between items-center mb-4">
-        {showFullContent && (
-          <div className="flex items-center gap-2">
-            <CustomLogIcon className="w-8 h-8 text-light-primary dark:text-dark-primary" />
-            <h2 className="text-xl font-bold text-light-text dark:text-dark-text">ロケレコ</h2>
-          </div>
-        )}
         <button onClick={onClose} className="p-1 text-light-text-secondary dark:text-dark-text-secondary hover:text-light-text dark:hover:text-dark-text md:hidden" aria-label="メニューを閉じる">
           <XIcon className="w-6 h-6" />
         </button>
