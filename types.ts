@@ -58,7 +58,7 @@ export type ManualAddFormData = Pick<Restaurant, 'name' | 'prefecture' | 'city' 
 
 export type UpdateRestaurantPayload = {
   id: string;
-  updatedData: Partial<Pick<Restaurant, 'visitCount' | 'userComment' | 'customUrl' | 'genres' | 'latitude' | 'longitude' | 'priceRange' | 'isClosed'>>;
+  updatedData: Partial<Pick<Restaurant, 'visitCount' | 'userComment' | 'customUrl' | 'genres' | 'latitude' | 'longitude' | 'priceRange' | 'isClosed' | 'hours'>>;
 };
 
 // For Hotpepper API response
@@ -75,6 +75,7 @@ export interface HotpepperRestaurant {
   catch: string; // catch copy
   photoUrl: string; // photo.pc.l
   siteUrl: string; // urls.pc
+  priceRange?: string; // budget.name
   isFromHotpepper: true;
 }
 

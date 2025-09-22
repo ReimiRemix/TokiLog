@@ -629,7 +629,7 @@ const App: React.FC = () => {
           city: data.city || '', website: 'siteUrl' in data ? data.siteUrl : data.website,
           sources: 'sources' in data ? data.sources : ('siteUrl' in data ? [{uri: data.siteUrl, title: data.name}] : []),
           genres: 'genre' in data ? [data.genre] : [],
-          priceRange: undefined, // Hotpepper data doesn't have priceRange
+          priceRange: data.priceRange, // Hotpepper data doesn't have priceRange
         };
       } else if ('visitCount' in data) { // It's a Restaurant object
         newRestaurantData = {
@@ -686,6 +686,7 @@ const App: React.FC = () => {
         custom_url: updatedData.customUrl, genres: updatedData.genres,
         latitude: updatedData.latitude, longitude: updatedData.longitude,
         price_range: updatedData.priceRange, is_closed: updatedData.isClosed,
+        hours: updatedData.hours,
       }).eq('id', id);
       if (error) throw new Error(`更新に失敗しました: ${error.message}`);
     },
@@ -863,6 +864,13 @@ const App: React.FC = () => {
       setSelectedFollowedUserId(null);
     }
   }, [view]);
+
+  // Switch to favorites view when filters are applied, but not from the area filter view
+  useEffect(() => {
+    if ((sidebarFilters.length > 0 || genreFilters.length > 0) && view !== 'areaFilter') {
+      setView('favorites');
+    }
+  }, [sidebarFilters, genreFilters, view]);
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -1110,6 +1118,7 @@ const App: React.FC = () => {
                       isReadOnly={isReadOnlyMode}
                       isMobile={isMobile}
                       isOverlayMode={isMobile}
+                      onScrollToRestaurant={handleScrollToRestaurant}
                       style={isMobile ? {} : { left: isSidebarCollapsed ? '5rem' : '20rem' }}
                     />
                     {isMobile && (

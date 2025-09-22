@@ -28,7 +28,7 @@ const FollowedUsersList: React.FC<FollowedUsersListProps> = ({ onSelectUser }) =
   const [userToUnfollow, setUserToUnfollow] = useState<FollowedUser | null>(null);
   const [userToBlock, setUserToBlock] = useState<FollowedUser | null>(null);
 
-  const { followedUsers, refreshFollowData, removeFollowedUser } = useFollow();
+  const { followedUsers, refreshFollowData } = useFollow();
 
   useEffect(() => {
     const getSession = async () => {
@@ -62,7 +62,6 @@ const FollowedUsersList: React.FC<FollowedUsersListProps> = ({ onSelectUser }) =
   const unfollowMutation = useMutation({
     mutationFn: unfollowUser,
     onSuccess: (data, variables) => {
-      removeFollowedUser(variables);
       refreshFollowData(); // Refresh followers list as well
       setUserToUnfollow(null);
       alert('フォローを解除しました。');
@@ -75,7 +74,6 @@ const FollowedUsersList: React.FC<FollowedUsersListProps> = ({ onSelectUser }) =
   const blockMutation = useMutation({
     mutationFn: blockUser,
     onSuccess: (data, variables) => {
-      removeFollowedUser(variables);
       refreshFollowData(); // Refresh followers list as well
       setUserToBlock(null);
       alert('ユーザーをブロックしました。');

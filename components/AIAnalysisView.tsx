@@ -200,7 +200,7 @@ const AIAnalysisView: React.FC<AIAnalysisViewProps> = ({ restaurants, user, onSc
   }
 
   return (
-    <div className="flex flex-col md:flex-row gap-6 h-[calc(100vh-250px)] animate-slide-down">
+    <div className="flex flex-col md:flex-row gap-6 animate-slide-down">
       {/* Left Pane: Chat History */}
       <div className="w-full md:w-1/3 lg:w-1/4 flex flex-col bg-light-card dark:bg-dark-card p-3 rounded-xl shadow-soft border border-light-border dark:border-dark-border">
         <div className="p-2">

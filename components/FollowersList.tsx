@@ -24,7 +24,15 @@ const FollowersList: React.FC<FollowersListProps> = ({ onSelectUser }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [userToBlock, setUserToBlock] = useState<Follower | null>(null);
 
-  const { followers, followedUsers, refreshFollowData, removeFollower } = useFollow();
+  const { followers, followedUsers, refreshFollowData } = useFollow();
+
+  const removeFollowerMutation = useMutation({
+    mutationFn: removeFollowerFromList,
+    onSuccess: (variables) => {
+      toast.success('フォロワーを削除しました。');
+      refreshFollowData();
+    },
+  });
 
   useEffect(() => {
     const getSession = async () => {
@@ -49,7 +57,6 @@ const FollowersList: React.FC<FollowersListProps> = ({ onSelectUser }) => {
   const blockMutation = useMutation({
     mutationFn: blockUser,
     onSuccess: (data, variables) => {
-      removeFollower(variables);
       refreshFollowData();
       setUserToBlock(null);
       alert('ユーザーをブロックしました。');

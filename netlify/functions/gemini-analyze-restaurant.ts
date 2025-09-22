@@ -41,7 +41,7 @@ const handler: Handler = async (event: HandlerEvent) => {
     const ai = new GoogleGenerativeAI(API_KEY);
 
     const prompt = `
-あなたはプロのグルメレポーターです。以下の情報を持つ飲食店について、ユーザーが「行ってみたい！」と思うような、簡潔で魅力的な紹介文を作成してください。
+あなたは想像力豊かなグルメブロガーです。以下の情報を持つ飲食店について、読者が「絶対にそこへ行きたい！」と感じるような、パーソナルで魅力的な紹介文を創作してください。
 
 # 店舗情報
 - 店名: ${restaurant.name}
@@ -50,24 +50,23 @@ const handler: Handler = async (event: HandlerEvent) => {
 - 住所: ${restaurant.address}
 
 ${(restaurant.visitCount !== undefined && restaurant.visitCount > 0) || restaurant.userComment ? `
-# 追加情報
+# あなたの記憶（追加情報）
 ${restaurant.visitCount !== undefined && restaurant.visitCount > 0 ? `- 来店回数: ${restaurant.visitCount}回` : ''}
-${restaurant.userComment ? `- 既存のコメント: "${restaurant.userComment}"` : ''}
+${restaurant.userComment ? `- 既存のメモ: "${restaurant.userComment}"` : ''}
 ` : ''}
 
-# 作成する紹介文のポイント
-- どんな料理が楽しめそうか、お店の雰囲気はどうかを想像して記述してください。
-- デート、友人との食事、家族での利用、一人での利用など、どんなシーンにおすすめかを具体的に含めてください。
-${(restaurant.visitCount !== undefined && restaurant.visitCount > 0) || restaurant.userComment ? `
-- **重要**: 上記の「追加情報」を必ず考慮してください。
-  - 既存のコメントがある場合は、その内容や意図を汲み取り、より洗練させたり、情報を補足する形で文章を作成してください。全く新しい内容にするのではなく、元のコメントを活かすことを重視してください。
-  - 来店回数が1回以上の場合は、リピーターであることがわかるような「また来た」「お気に入りの」といったニュアンスを含めると、よりパーソナルな紹介文になります。
-` : ''}
-- 全体で100〜150字程度の、親しみやすい文章にしてください。
-- 回答は紹介文のみとし、他の余計な言葉は含めないでください。
+# 紹介文の作成指示
+- **役割**: あなたはこの店のファンの一人です。個人的な体験や感情を込めて書いてください。
+- **シナリオ**: 以下のいずれかのシナリオに沿って、物語を創作してください。
+    - 初めてこの店を訪れた時の感動的な体験。
+    - 大切な人（友人、恋人、家族）を連れて行った時のエピソード。
+    - この店の特定のメニューや雰囲気が、自分の人生のワンシーンとどう結びついているか。
+- **表現**: 既存のメモの内容を参考にしつつも、あなたの言葉で表現を豊かにしてください。五感（特に味覚、嗅覚、店内の音など）に訴える描写を必ず含めてください。
+- **具体性**: 「美味しい」や「素晴らしい」だけでなく、「〇〇のような食感」「〇〇を彷彿とさせる香り」のように、比喩表現を一つ以上使ってください。
+- **形式**: 全体で100〜150字程度の、親しみやすい文章にしてください。回答は紹介文のみとし、他の余計な言葉は含めないでください。
 `;
 
-    const model = ai.getGenerativeModel({ model: "gemini-2.5-flash"});
+    const model = ai.getGenerativeModel({ model: "gemini-2.5-flash", generationConfig: { temperature: 0.7 }});
     const result = await model.generateContent(prompt);
     const response = result.response;
 

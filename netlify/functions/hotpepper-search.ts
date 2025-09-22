@@ -139,6 +139,7 @@ ${JSON.stringify(query, null, 2)}
             genre: shop.genre?.name || 'ジャンルなし', catch: shop.catch || '',
             photoUrl: shop.photo?.pc?.l || 'https://via.placeholder.com/300',
             siteUrl: shop.urls?.pc || '', isFromHotpepper: true,
+            priceRange: shop.budget?.name,
         };
     });
     

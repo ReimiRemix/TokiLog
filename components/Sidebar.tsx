@@ -89,12 +89,22 @@ const Sidebar: React.FC<SidebarProps> = ({
     if (isSharedLinkAnonymous) {
       items = items.filter(item => item.id === 'areaFilter');
     } else if (isSuperAdmin) {
+      // 管理者用の項目を追加
       items.push({ id: 'monitoring', label: '監視', icon: ActivityIcon });
     }
     return items;
   }, [isSuperAdmin, isSharedLinkAnonymous]);
 
   const [orderedMenuItems, setOrderedMenuItems] = useLocalStorage<MenuItem[]>('sidebarMenuItems', menuItems);
+
+  useEffect(() => {
+    const hasMonitoringInStorage = orderedMenuItems.some(item => item.id === 'monitoring');
+    const shouldHaveMonitoring = isSuperAdmin;
+
+    if (shouldHaveMonitoring !== hasMonitoringInStorage) {
+      setOrderedMenuItems(menuItems);
+    }
+  }, [isSuperAdmin, menuItems, orderedMenuItems, setOrderedMenuItems]);
 
   const grouped = useMemo(() => {
     return restaurants.reduce<Record<string, Record<string, Restaurant[]>>>((acc, restaurant) => {
@@ -163,7 +173,6 @@ const Sidebar: React.FC<SidebarProps> = ({
       onFilterChange(activeFilter.filter((_, i) => i !== existingIndex));
     } else {
       onFilterChange([...activeFilter, newFilter]);
-      onSelectMenuItem('favorites'); // Switch to favorites view when a filter is applied
     }
   };
 
@@ -240,12 +249,10 @@ const Sidebar: React.FC<SidebarProps> = ({
                   onClick={(e) => {
                     e.stopPropagation();
                     onClose();
-                    if (item.id === 'areaFilter') { // Handle areaFilter separately
+                    if (item.id === 'areaFilter') { 
                       onToggleAreaFilter();
                     } else {
-                      // item.id が 'admin_user_management' の場合は 'settings' に変換
-                      const targetView = item.id === 'admin_user_management' ? 'settings' : item.id;
-                      onSelectMenuItem(targetView as View); // View 型にキャスト
+                      onSelectMenuItem(item.id as View);
                     }
                   }}
                   className={twMerge(
@@ -269,6 +276,96 @@ const Sidebar: React.FC<SidebarProps> = ({
           </ul>
 
         </nav>
+
+        {currentView === 'areaFilter' && showFullContent && (
+          <div className="flex-1 overflow-y-auto pr-2 -mr-2">
+            <div className="mb-4">
+              <div className="relative">
+                <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-light-text-secondary dark:text-dark-text-secondary" />
+                <input
+                  type="text"
+                  placeholder="都道府県、市区町村、店舗名で検索"
+                  className="w-full pl-10 pr-4 py-2 rounded-md bg-light-bg dark:bg-dark-bg border border-light-border dark:border-dark-border text-light-text dark:text-dark-text text-sm focus:outline-none focus:ring-2 focus:ring-light-primary dark:focus:ring-dark-primary"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-light-text-secondary dark:text-dark-text-secondary hover:text-light-text dark:hover:text-dark-text"
+                    aria-label="検索をクリア"
+                  >
+                    <XIcon className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <ul className="space-y-1">
+              {filteredPrefectures.map(prefecture => {
+                const prefectureRestaurants = Object.values(grouped[prefecture]).flat();
+                const isPrefectureExpanded = expanded[prefecture];
+                const filteredCityEntries = Object.entries(grouped[prefecture]).filter(([city, cityRestaurants]) => {
+                  if (!lowercasedQuery) return true;
+                  return city.toLowerCase().includes(lowercasedQuery) || cityRestaurants.some(r => r.name.toLowerCase().includes(lowercasedQuery));
+                });
+
+                if (prefectureRestaurants.length === 0 || (lowercasedQuery && filteredCityEntries.length === 0 && !prefecture.toLowerCase().includes(lowercasedQuery))) {
+                  return null; // Hide prefecture if no matching restaurants or cities after filtering
+                }
+
+                return (
+                  <li key={prefecture}>
+                    <button
+                      onClick={() => togglePrefectureExpansion(prefecture)}
+                      className="flex items-center w-full text-left font-medium text-light-text dark:text-dark-text hover:bg-slate-100 dark:hover:bg-slate-700/50 p-2 rounded-md"
+                    >
+                      <ChevronDownIcon className={twMerge("w-4 h-4 mr-2 transition-transform", isPrefectureExpanded ? "rotate-0" : "-rotate-90")} />
+                      <span className="flex-grow text-left truncate">{prefecture} ({prefectureRestaurants.length})</span>
+                      {activeFilter.some(f => f.type === 'prefecture' && f.value === prefecture) ? (
+                        <XIcon className="w-4 h-4 ml-2 text-light-primary dark:text-dark-primary" onClick={(e) => { e.stopPropagation(); handleFilterClick('prefecture', prefecture); }} />
+                      ) : (
+                        <MapPinIcon className="w-4 h-4 ml-2 text-light-text-secondary dark:text-dark-text-secondary hover:text-light-primary dark:hover:text-dark-primary" onClick={(e) => { e.stopPropagation(); handleFilterClick('prefecture', prefecture); }} />
+                      )}
+                    </button>
+                    {isPrefectureExpanded && (
+                      <ul className="pl-6 pr-2 py-1 space-y-1">
+                        {filteredCityEntries.map(([city, cityRestaurants]) => (
+                          <li key={city}>
+                            <button
+                              onClick={() => togglePrefectureExpansion(`${prefecture}-${city}`)}
+                              className="flex items-center w-full text-left text-sm text-light-text dark:text-dark-text hover:bg-slate-100 dark:hover:bg-slate-700/50 p-1 rounded-md"
+                            >
+                              <ChevronDownIcon className={twMerge("w-4 h-4 mr-2 transition-transform", expanded[`${prefecture}-${city}`] ? "rotate-0" : "-rotate-90")} />
+                              <span className="flex-grow text-left truncate">{city} ({cityRestaurants.length})</span>
+                            </button>
+                            {expanded[`${prefecture}-${city}`] && (
+                              <ul className="pl-8 pr-2 py-1 space-y-1">
+                                {cityRestaurants
+                                  .filter(r => !lowercasedQuery || r.name.toLowerCase().includes(lowercasedQuery) || city.toLowerCase().includes(lowercasedQuery) || prefecture.toLowerCase().includes(lowercasedQuery))
+                                  .map(r => (
+                                    <li key={r.id}>
+                                      <button 
+                                        onClick={() => onScrollToRestaurant(r.id)}
+                                        className="w-full text-left text-sm text-light-text-secondary dark:text-dark-text-secondary hover:text-light-primary dark:hover:text-dark-primary truncate p-1 rounded-md"
+                                        title={r.name}
+                                      >
+                                        {r.name}
+                                      </button>
+                                    </li>
+                                ))}
+                              </ul>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
     </aside>
   );
 };

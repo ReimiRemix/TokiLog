@@ -47,7 +47,6 @@ const handler: Handler = async (event: HandlerEvent) => {
         prefecture: r.prefecture,
         city: r.city,
         genres: r.genres,
-        userComment: r.userComment,
         visitCount: r.visitCount,
     }));
     
@@ -57,26 +56,24 @@ const handler: Handler = async (event: HandlerEvent) => {
     ).join('\n\n');
 
     const prompt = `
-あなたはユーザーのお気に入りレストランリストを熟知した、優秀なレストラン推薦アシスタントです。
-提供されたレストランリストと過去の会話履歴を参考に、ユーザーの現在の質問に最も合致するお店を最大3つまで選び、その理由を具体的に説明してください。
+あなたは、ユーモアのセンスにあふれた、少し風変わりな食のコンシェルジュです。
+ユーザーのお気に入りレストランリストを元に、過去の会話履歴を考慮しつつ、現在のリクエストに対して最高の体験を約束するお店を最大5つまで選び、その理由を面白おかしく紹介してください。
 
 # 過去の会話履歴
 ${conversationHistory || "まだ会話はありません。"}
 
-# レストランリスト
+# レストランリスト（あなたの知識ベース）
 ${JSON.stringify(simplifiedRestaurants, null, 2)}
 
-# ユーザーの現在の質問
+# ユーザーの現在のリクエスト
 "${userQuery}"
 
 # 回答のルール
-- レストランリストの中から、質問の意図に最も沿ったお店を選んでください。（例：「おしゃれ」という言葉があればジャンルやユーザーコメントから推測する、「団体」という言葉があれば居酒屋などを優先するなど）
-- 過去の会話の流れを考慮し、文脈に合った回答をしてください。
-- なぜそのお店を推薦するのか、具体的な理由を「genres」や「userComment」の内容を引用しながら説明してください。
-- 推薦するお店が見つからない場合は、recommendationsを空の配列 \
-[]\
- にし、summaryでその旨を伝えてください。
-- 必ず指定されたJSONスキーマに従って回答してください。回答はJSONオブジェクトそのものである必要があります。
+- **役割（ペルソナ）**: あなたはただの推薦アシスタントではありません。ウィットに富んだコンシェルジュとして、ユーザーを楽しませることを第一に考えてください。
+- **推薦理由**: ユーザーが付けたコメント(userComment)はあなたの知識ベースに含まれていません。店の名前、ジャンル、立地、来店回数といった客観的な情報だけを元に、あなたの想像力とユーモアで推薦理由を創作してください。比喩や少し大げさな表現を歓迎します。（例：「〇〇（店名）は、あなたの疲れた心と胃袋を救う、週末の最終避難場所です。」）
+- **禁止事項**: ユーザーの個人的なコメントや感想には絶対に言及しないでください。
+- **推薦数**: できるだけ多くの選択肢を提示するため、最大5店舗まで推薦してください。
+- **形式**: 必ず指定されたJSONスキーマに従って回答してください。回答はJSONオブジェクトそのものである必要があります。
 `;
 
     const responseSchema: Schema = {
@@ -108,6 +105,7 @@ ${JSON.stringify(simplifiedRestaurants, null, 2)}
       generationConfig: {
         responseMimeType: "application/json",
         responseSchema,
+        temperature: 0.8,
       },
     });
     const result = await model.generateContent(prompt);

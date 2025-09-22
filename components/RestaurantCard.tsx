@@ -12,6 +12,7 @@ import TagIcon from './icons/TagIcon';
 import XIcon from './icons/XIcon';
 import CheckIcon from './icons/CheckIcon';
 import ChevronDownIcon from './icons/ChevronDownIcon';
+import ClockIcon from './icons/ClockIcon';
 import RefreshCwIcon from './icons/RefreshCwIcon';
 import SmallLoadingSpinner from './icons/SmallLoadingSpinner';
 import AlertTriangleIcon from './icons/AlertTriangleIcon';
@@ -73,6 +74,10 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({
   const [priceRange, setPriceRange] = useState(restaurant.priceRange || '');
   const priceInputRef = useRef<HTMLInputElement>(null);
 
+  const [isEditingHours, setIsEditingHours] = useState(false);
+  const [hours, setHours] = useState(restaurant.hours || '');
+  const hoursTextareaRef = useRef<HTMLTextAreaElement>(null);
+
   const isAlreadyInFavorites = useMemo(() => {
     if (!myRestaurants) return false;
     return myRestaurants.some(r => r.name === restaurant.name && r.address === restaurant.address);
@@ -81,6 +86,14 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({
   useEffect(() => {
     if (isEditingPrice && priceInputRef.current) priceInputRef.current.focus();
   }, [isEditingPrice]);
+
+  useEffect(() => {
+    if (isEditingHours && hoursTextareaRef.current) {
+      hoursTextareaRef.current.focus();
+      hoursTextareaRef.current.style.height = 'auto';
+      hoursTextareaRef.current.style.height = `${hoursTextareaRef.current.scrollHeight}px`;
+    }
+  }, [isEditingHours]);
 
   useEffect(() => {
     if (isEditingComment && textareaRef.current) {
@@ -117,6 +130,23 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({
 
   const handleCommentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setComment(e.target.value);
+    e.target.style.height = 'auto';
+    e.target.style.height = `${e.target.scrollHeight}px`;
+  };
+
+  const handleHoursBlur = () => {
+    setIsEditingHours(false);
+    if (hours !== restaurant.hours) {
+      onUpdate(restaurant.id, { hours: hours });
+    }
+  };
+
+  const handleHoursKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleHoursBlur(); }
+  }
+
+  const handleHoursChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setHours(e.target.value);
     e.target.style.height = 'auto';
     e.target.style.height = `${e.target.scrollHeight}px`;
   };
@@ -237,6 +267,13 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({
             <span>{restaurant.prefecture}{restaurant.city}{restaurant.address}</span>
           </p>
 
+          {restaurant.hours && (
+            <p className="text-xs text-light-text-secondary dark:text-dark-text-secondary mt-2 flex items-start gap-1.5">
+              <ClockIcon className="w-4 h-4 mt-0.5 flex-shrink-0" />
+              <span>{restaurant.hours}</span>
+            </p>
+          )}
+
           {restaurant.priceRange && <p className="text-sm font-medium text-light-text-secondary dark:text-dark-text-secondary mt-2">{restaurant.priceRange}</p>}
 
           {restaurant.userComment && !isExpanded && (
@@ -258,12 +295,17 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({
             </div>
 
             <div className="flex items-center gap-1">
-              {restaurant.customUrl && (
-                  <a href={restaurant.customUrl.startsWith('http') ? restaurant.customUrl : `https://${restaurant.customUrl}`} target="_blank" rel="noopener noreferrer" className="p-2 rounded-full text-light-text-secondary dark:text-dark-text-secondary hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
-                  <ExternalLinkIcon className="w-5 h-5"/>
+              {restaurant.siteUrl && (
+                  <a href={restaurant.siteUrl} target="_blank" rel="noopener noreferrer" className="p-2 rounded-full text-light-text-secondary dark:text-dark-text-secondary hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors" title="公式サイト">
+                      <ExternalLinkIcon className="w-5 h-5"/>
                   </a>
               )}
-              <a href={mapUrl} target="_blank" rel="noopener noreferrer" className={twMerge("p-2 rounded-full text-light-text-secondary dark:text-dark-text-secondary hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors", (hasInvalidCoords || restaurant.isClosed) && "opacity-50 cursor-not-allowed")}>
+              {restaurant.customUrl && (
+                  <a href={restaurant.customUrl.startsWith('http') ? restaurant.customUrl : `https://${restaurant.customUrl}`} target="_blank" rel="noopener noreferrer" className="p-2 rounded-full text-light-text-secondary dark:text-dark-text-secondary hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors" title="カスタムリンク">
+                  <LinkIcon className="w-5 h-5"/>
+                  </a>
+              )}
+              <a href={mapUrl} target="_blank" rel="noopener noreferrer" className={twMerge("p-2 rounded-full text-light-text-secondary dark:text-dark-text-secondary hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors", (hasInvalidCoords || restaurant.isClosed) && "opacity-50 cursor-not-allowed")} title="Googleマップで開く">
                   <MapPinIcon className="w-5 h-5" />
               </a>
               {!controlsDisabled && (
@@ -296,7 +338,21 @@ const RestaurantCard: React.FC<RestaurantCardProps> = ({
                   <textarea ref={textareaRef} value={comment} onChange={handleCommentChange} onBlur={handleCommentBlur} onKeyDown={handleCommentKeyDown} className="w-full p-2 text-sm bg-light-bg dark:bg-dark-bg border border-light-primary dark:border-dark-primary rounded-md focus:ring-2 focus:ring-light-primary transition resize-none overflow-hidden" placeholder="お店の思い出や好きなメニューなどを記録..." rows={1} />
               ) : (
                   <p onClick={() => !controlsDisabled && setIsEditingComment(true)} className={`w-full p-2 text-sm min-h-[40px] rounded-md ${!controlsDisabled ? 'cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700' : ''} transition whitespace-pre-wrap text-light-text-secondary dark:text-dark-text-secondary`}>
-                      {restaurant.userComment || (controlsDisabled ? 'コメントはありません。' : <span className="text-slate-400 dark:text-slate-500">コメントを追加...</span>)}
+                      {restaurant.userComment || (controlsDisabled ? 'コメントはありません。': <span className="text-slate-400 dark:text-slate-500">コメントを追加...</span>)}
+                  </p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <h4 className="flex items-center gap-2 text-sm font-medium text-light-text dark:text-dark-text"><ClockIcon />営業時間:</h4>
+                {!isEditingHours && !controlsDisabled && (<IconButton onClick={() => setIsEditingHours(true)} className="w-8 h-8"><PencilIcon /></IconButton>)}
+              </div>
+              {isEditingHours && !controlsDisabled ? (
+                  <textarea ref={hoursTextareaRef} value={hours} onChange={handleHoursChange} onBlur={handleHoursBlur} onKeyDown={handleHoursKeyDown} className="w-full p-2 text-sm bg-light-bg dark:bg-dark-bg border border-light-primary dark:border-dark-primary rounded-md focus:ring-2 focus:ring-light-primary transition resize-none overflow-hidden" placeholder="営業時間や定休日などを記録..." rows={1} />
+              ) : (
+                  <p onClick={() => !controlsDisabled && setIsEditingHours(true)} className={`w-full p-2 text-sm min-h-[40px] rounded-md ${!controlsDisabled ? 'cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700' : ''} transition whitespace-pre-wrap text-light-text-secondary dark:text-dark-text-secondary`}>
+                      {restaurant.hours || (controlsDisabled ? '営業時間は未登録です。': <span className="text-slate-400 dark:text-slate-500">時間を追加...</span>)}
                   </p>
               )}
             </div>

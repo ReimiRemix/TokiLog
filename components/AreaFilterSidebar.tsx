@@ -9,6 +9,7 @@ interface AreaFilterSidebarProps {
   restaurants: Restaurant[];
   prefectureOrder: string[];
   onFilterChange: (filters: SidebarFilter[]) => void;
+  onScrollToRestaurant: (restaurantId: string) => void;
   activeFilter: SidebarFilter[];
   isOpen: boolean;
   onClose: () => void;
@@ -22,6 +23,7 @@ const AreaFilterSidebar: React.FC<AreaFilterSidebarProps> = ({
   restaurants,
   prefectureOrder,
   onFilterChange,
+  onScrollToRestaurant,
   activeFilter,
   isOpen,
   onClose,
@@ -33,11 +35,11 @@ const AreaFilterSidebar: React.FC<AreaFilterSidebarProps> = ({
   const [expanded, setExpanded] = useState<{ [key: string]: boolean }>({});
 
   const groupedByArea = useMemo(() => {
-    return restaurants.reduce<Record<string, Record<string, number>>>((acc, restaurant) => {
+    return restaurants.reduce<Record<string, Record<string, Restaurant[]>>>((acc, restaurant) => {
       const { prefecture, city } = restaurant;
       if (!acc[prefecture]) acc[prefecture] = {};
-      if (!acc[prefecture][city]) acc[prefecture][city] = 0;
-      acc[prefecture][city]++;
+      if (!acc[prefecture][city]) acc[prefecture][city] = [];
+      acc[prefecture][city].push(restaurant);
       return acc;
     }, {});
   }, [restaurants]);
@@ -57,19 +59,31 @@ const AreaFilterSidebar: React.FC<AreaFilterSidebarProps> = ({
     return sortedPrefectures.filter(prefecture => {
       if (prefecture.toLowerCase().includes(lowercasedQuery)) return true;
       const cities = groupedByArea[prefecture];
-      return Object.keys(cities).some(city => city.toLowerCase().includes(lowercasedQuery));
+      return Object.entries(cities).some(([city, cityRestaurants]) => {
+        if (city.toLowerCase().includes(lowercasedQuery)) return true;
+        return cityRestaurants.some(r => r.name.toLowerCase().includes(lowercasedQuery));
+      });
     });
   }, [sortedPrefectures, groupedByArea, lowercasedQuery]);
 
   useEffect(() => {
     if (lowercasedQuery) {
       const newExpanded: { [key: string]: boolean } = {};
-      filteredPrefectures.forEach(pref => { newExpanded[pref] = true; });
+      filteredPrefectures.forEach(pref => { 
+        newExpanded[pref] = true;
+        const cities = groupedByArea[pref];
+        Object.keys(cities).forEach(city => {
+            const cityRestaurants = cities[city];
+            if (city.toLowerCase().includes(lowercasedQuery) || cityRestaurants.some(r => r.name.toLowerCase().includes(lowercasedQuery))) {
+                newExpanded[`${pref}-${city}`] = true;
+            }
+        });
+      });
       setExpanded(newExpanded);
     } else {
       setExpanded({});
     }
-  }, [lowercasedQuery, filteredPrefectures]);
+  }, [lowercasedQuery, filteredPrefectures, groupedByArea]);
 
   const toggleExpansion = (key: string) => {
     setExpanded(prev => ({ ...prev, [key]: !prev[key] }));
@@ -122,7 +136,7 @@ const AreaFilterSidebar: React.FC<AreaFilterSidebarProps> = ({
             {filteredPrefectures.map((prefecture) => {
               const cities = groupedByArea[prefecture];
               const isPrefectureActive = activeFilter.some(f => f.type === 'prefecture' && f.value === prefecture);
-              const totalCount = Object.values(cities).reduce((sum, count) => sum + count, 0);
+              const totalCount = Object.values(cities).flat().length;
 
               return (
                 <li key={prefecture}>
@@ -146,23 +160,43 @@ const AreaFilterSidebar: React.FC<AreaFilterSidebarProps> = ({
                   </div>
                   {expanded[prefecture] && (
                     <ul className="pl-5 mt-1 space-y-1">
-                      {Object.entries(cities).map(([city, count]) => {
+                      {Object.entries(cities).map(([city, cityRestaurants]) => {
                         const isCityActive = activeFilter.some(f => f.type === 'city' && f.value === city);
                         return (
                           <li key={city}>
-                            <button
-                                onClick={() => handleFilterClick('city', city)}
-                                disabled={isReadOnly}
-                                className={twMerge(
-                                    'flex-grow text-left py-1.5 flex items-center gap-3 transition-colors w-full rounded-md',
-                                    isCityActive ? 'text-light-primary dark:text-dark-primary font-semibold bg-light-primary-soft-bg dark:bg-dark-primary-soft-bg' : 'text-light-text-secondary dark:text-dark-text-secondary hover:bg-slate-100 dark:hover:bg-slate-700/50',
-                                    'pl-3',
-                                    isReadOnly && 'cursor-not-allowed'
-                                )}
-                            >
-                                {city}
-                                <span className="ml-auto text-xs font-normal text-light-text-secondary dark:text-dark-text-secondary bg-slate-200 dark:bg-slate-700 rounded-full px-2 py-0.5">{count}</span>
-                            </button>
+                            <div className={twMerge("flex items-center justify-between rounded-md transition-colors", isCityActive && 'bg-light-primary-soft-bg dark:bg-dark-primary-soft-bg')}>
+                                <button
+                                    onClick={() => handleFilterClick('city', city)}
+                                    disabled={isReadOnly}
+                                    className={twMerge(
+                                        'flex-grow text-left py-1.5 flex items-center gap-3 transition-colors w-full',
+                                        isCityActive ? 'text-light-primary dark:text-dark-primary font-semibold' : 'text-light-text-secondary dark:text-dark-text-secondary hover:bg-slate-100 dark:hover:bg-slate-700/50',
+                                        'pl-3',
+                                        isReadOnly && 'cursor-not-allowed'
+                                    )}
+                                >
+                                    {city}
+                                    <span className="ml-auto text-xs font-normal text-light-text-secondary dark:text-dark-text-secondary bg-slate-200 dark:bg-slate-700 rounded-full px-2 py-0.5">{cityRestaurants.length}</span>
+                                </button>
+                                <button onClick={() => toggleExpansion(`${prefecture}-${city}`)} className="p-2 mr-1 rounded-md text-light-text-secondary dark:text-dark-text-secondary hover:bg-slate-100 dark:hover:bg-slate-700/50">
+                                    <ChevronDownIcon className={`w-5 h-5 transition-transform duration-200 ${expanded[`${prefecture}-${city}`] ? 'rotate-180' : ''}`} />
+                                </button>
+                            </div>
+                            {expanded[`${prefecture}-${city}`] && (
+                                <ul className="pl-8 mt-1 space-y-1">
+                                    {cityRestaurants.map(restaurant => (
+                                        <li key={restaurant.id}>
+                                            <button 
+                                                onClick={() => onScrollToRestaurant(restaurant.id)}
+                                                className="w-full text-left text-xs text-light-text-secondary dark:text-dark-text-secondary hover:text-light-primary dark:hover:text-dark-primary truncate p-1 rounded-md transition-colors"
+                                                title={restaurant.name}
+                                            >
+                                                {restaurant.name}
+                                            </button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
                           </li>
                         );
                       })}

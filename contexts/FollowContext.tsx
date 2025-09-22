@@ -7,10 +7,6 @@ interface FollowContextType {
   followedUsers: FollowingUser[];
   followers: Follower[];
   refreshFollowData: () => Promise<void>;
-  addFollowedUser: (user: FollowingUser) => void;
-  removeFollowedUser: (userId: string) => void;
-  addFollower: (follower: Follower) => void;
-  removeFollower: (followerId: string) => void;
 }
 
 const FollowContext = createContext<FollowContextType | undefined>(undefined);
@@ -56,21 +52,35 @@ export const FollowProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     refreshFollowData();
   }, [refreshFollowData]);
 
-  const addFollowedUser = useCallback((user: FollowingUser) => {
-    setFollowedUsers((prev) => [...prev, user]);
-  }, []);
+  // Real-time subscription for follows table
+  useEffect(() => {
+    if (!currentUserId) return;
 
-  const removeFollowedUser = useCallback((userId: string) => {
-    setFollowedUsers((prev) => prev.filter((u) => u.followed_user_id !== userId));
-  }, []);
+    const handleFollowChange = (payload: any) => {
+      console.log('Follows table change detected:', payload);
+      refreshFollowData();
+    };
 
-  const addFollower = useCallback((follower: Follower) => {
-    setFollowers((prev) => [...prev, follower]);
-  }, []);
+    const channel = supabase.channel(`realtime-follows:${currentUserId}`);
+    
+    channel
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'follows', filter: `follower_id=eq.${currentUserId}` },
+        handleFollowChange
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'follows', filter: `followed_user_id=eq.${currentUserId}` },
+        handleFollowChange
+      )
+      .subscribe();
 
-  const removeFollower = useCallback((followerId: string) => {
-    setFollowers((prev) => prev.filter((f) => f.follower_id !== followerId));
-  }, []);
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [currentUserId, refreshFollowData]);
+
 
   return (
     <FollowContext.Provider
@@ -78,10 +88,6 @@ export const FollowProvider: React.FC<{ children: ReactNode }> = ({ children }) 
         followedUsers,
         followers,
         refreshFollowData,
-        addFollowedUser,
-        removeFollowedUser,
-        addFollower,
-        removeFollower,
       }}
     >
       {children}
